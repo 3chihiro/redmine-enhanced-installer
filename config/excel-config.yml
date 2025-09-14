@@ -1,0 +1,401 @@
+# Enhanced Redmine Excel Configuration
+# Advanced Excel integration settings for enhanced productivity
+
+# Production environment settings
+production:
+  excel_export:
+    # Core export settings
+    enabled: true
+    default_format: "xlsx"
+    max_export_rows: 50000
+    timeout_seconds: 300
+    memory_limit_mb: 512
+    
+    # File handling
+    output_directory: "files/excel_exports"
+    template_directory: "templates/excel"
+    temp_directory: "tmp/excel_processing"
+    cleanup_after_days: 30
+    
+    # Filename conventions
+    filename_pattern: "{project}_{export_type}_{timestamp}"
+    timestamp_format: "%Y%m%d_%H%M%S"
+    sanitize_filenames: true
+    
+    # Excel formatting options
+    formatting:
+      auto_resize_columns: true
+      freeze_header_row: true
+      enable_filters: true
+      apply_zebra_striping: true
+      header_background_color: "4F81BD"
+      header_font_color: "FFFFFF"
+      header_font_bold: true
+      wrap_text_in_cells: true
+      
+      # Date and number formatting
+      date_format: "yyyy-mm-dd"
+      datetime_format: "yyyy-mm-dd hh:mm:ss"
+      time_format: "hh:mm:ss"
+      currency_format: "#,##0.00"
+      percentage_format: "0.00%"
+      decimal_format: "#,##0.00"
+    
+    # Column configurations for different export types
+    columns:
+      issues:
+        default:
+          - id
+          - project
+          - tracker
+          - subject
+          - description
+          - status
+          - priority
+          - assigned_to
+          - author
+          - start_date
+          - due_date
+          - estimated_hours
+          - spent_hours
+          - done_ratio
+          - created_on
+          - updated_on
+        
+        detailed:
+          - id
+          - project
+          - tracker
+          - subject
+          - description
+          - status
+          - priority
+          - assigned_to
+          - author
+          - category
+          - fixed_version
+          - start_date
+          - due_date
+          - estimated_hours
+          - spent_hours
+          - done_ratio
+          - created_on
+          - updated_on
+          - last_notes
+          - custom_fields
+          - relations
+          - attachments_count
+        
+        summary:
+          - id
+          - project
+          - subject
+          - status
+          - assigned_to
+          - due_date
+          - done_ratio
+      
+      projects:
+        default:
+          - id
+          - name
+          - identifier
+          - description
+          - status
+          - is_public
+          - parent
+          - created_on
+          - updated_on
+        
+        detailed:
+          - id
+          - name
+          - identifier
+          - description
+          - homepage
+          - status
+          - is_public
+          - parent
+          - custom_fields
+          - trackers
+          - issue_categories
+          - enabled_modules
+          - created_on
+          - updated_on
+      
+      time_entries:
+        default:
+          - id
+          - project
+          - issue
+          - user
+          - activity
+          - hours
+          - spent_on
+          - comments
+          - created_on
+        
+        detailed:
+          - id
+          - project
+          - issue
+          - user
+          - activity
+          - hours
+          - spent_on
+          - comments
+          - custom_fields
+          - created_on
+          - updated_on
+      
+      users:
+        default:
+          - id
+          - login
+          - firstname
+          - lastname
+          - mail
+          - admin
+          - status
+          - last_login_on
+          - created_on
+        
+        detailed:
+          - id
+          - login
+          - firstname
+          - lastname
+          - mail
+          - admin
+          - status
+          - language
+          - auth_source
+          - custom_fields
+          - groups
+          - last_login_on
+          - created_on
+          - updated_on
+    
+    # Advanced features
+    gantt_chart:
+      enabled: true
+      include_dependencies: true
+      show_progress_bars: true
+      color_by_status: true
+      color_by_priority: false
+      show_critical_path: true
+      include_milestones: true
+      timeline_scale: "months"
+      max_timeline_months: 24
+      
+      # Gantt-specific formatting
+      task_bar_height: 20
+      progress_bar_color: "00FF00"
+      critical_path_color: "FF0000"
+      milestone_color: "FFD700"
+      dependency_line_color: "808080"
+      
+      # Export options
+      include_resource_allocation: true
+      include_baseline_comparison: false
+      export_to_ms_project: false
+    
+    # Earned Value Management (EVM) settings
+    evm:
+      enabled: true
+      calculation_method: "earned_value"
+      baseline_date_field: "start_date"
+      
+      # EVM metrics to include
+      metrics:
+        - planned_value
+        - earned_value  
+        - actual_cost
+        - budget_at_completion
+        - schedule_variance
+        - cost_variance
+        - schedule_performance_index
+        - cost_performance_index
+        - estimate_at_completion
+        - estimate_to_complete
+        - to_complete_performance_index
+        - variance_at_completion
+      
+      # Forecasting options
+      forecasting:
+        enabled: true
+        projection_method: "trend_analysis"
+        confidence_interval: 95
+        include_monte_carlo: false
+      
+      # Chart generation
+      charts:
+        enabled: true
+        chart_types:
+          - "performance_chart"
+          - "variance_chart" 
+          - "forecast_chart"
+          - "s_curve"
+        chart_format: "png"
+        chart_size: "800x600"
+    
+    # Report templates
+    templates:
+      issues_export:
+        filename: "issue-export-template.xlsx"
+        worksheet_name: "Issues Export"
+        include_charts: true
+        include_pivot_tables: false
+      
+      gantt_chart:
+        filename: "gantt-template.xlsx"
+        worksheet_name: "Gantt Chart"
+        include_timeline: true
+        include_dependencies: true
+        include_resources: true
+      
+      evm_report:
+        filename: "evm-template.xlsx"
+        worksheet_name: "EVM Analysis"
+        include_performance_charts: true
+        include_forecasting: true
+        include_variance_analysis: true
+      
+      project_dashboard:
+        filename: "project-dashboard-template.xlsx"
+        worksheets:
+          - name: "Overview"
+            type: "summary"
+          - name: "Issues"
+            type: "issues_detailed"
+          - name: "Time Tracking"
+            type: "time_entries"
+          - name: "Progress"
+            type: "gantt_chart"
+          - name: "Performance"
+            type: "evm_analysis"
+      
+      time_tracking:
+        filename: "time-tracking-template.xlsx"
+        worksheet_name: "Time Entries"
+        include_user_summary: true
+        include_project_summary: true
+        include_charts: true
+        
+      custom_report:
+        filename: "custom-report-template.xlsx"
+        worksheet_name: "Custom Report"
+        allow_user_customization: true
+        save_user_preferences: true
+
+  # Excel import settings
+  excel_import:
+    enabled: true
+    supported_formats: ["xlsx", "xls", "csv", "ods"]
+    max_file_size_mb: 50
+    max_rows: 100000
+    encoding: "utf-8"
+    
+    # Import validation
+    validation:
+      strict_mode: false
+      skip_blank_rows: true
+      skip_validation_errors: false
+      log_validation_errors: true
+      
+    # Required fields for different import types
+    required_fields:
+      issues:
+        - subject
+        - project
+      
+      time_entries:
+        - project
+        - spent_on
+        - hours
+      
+      projects:
+        - name
+        - identifier
+      
+      users:
+        - login
+        - firstname
+        - lastname
+        - mail
+    
+    # Field mapping for import
+    field_mappings:
+      issues:
+        subject: ["subject", "title", "issue_title", "task_name"]
+        description: ["description", "details", "notes", "comments"]
+        assigned_to: ["assigned_to", "assignee", "owner", "responsible"]
+        priority: ["priority", "priority_name", "importance"]
+        status: ["status", "state", "condition"]
+        tracker: ["tracker", "type", "issue_type"]
+        start_date: ["start_date", "start", "begin_date", "start_time"]
+        due_date: ["due_date", "end_date", "deadline", "completion_date"]
+        estimated_hours: ["estimated_hours", "estimate", "planned_hours", "effort"]
+        done_ratio: ["done_ratio", "progress", "completion", "percentage"]
+        
+      projects:
+        name: ["name", "project_name", "title"]
+        identifier: ["identifier", "key", "code"]
+        description: ["description", "summary", "details"]
+        
+      time_entries:
+        project: ["project", "project_name"]
+        issue: ["issue", "issue_id", "task"]
+        hours: ["hours", "time", "duration"]
+        spent_on: ["spent_on", "date", "work_date"]
+        comments: ["comments", "description", "notes"]
+        activity: ["activity", "activity_type", "work_type"]
+        user: ["user", "username", "employee", "worker"]
+
+# Development environment settings (for testing)
+development:
+  excel_export:
+    enabled: true
+    default_format: "xlsx"
+    max_export_rows: 1000
+    timeout_seconds: 60
+    memory_limit_mb: 128
+    
+    output_directory: "tmp/excel_exports"
+    template_directory: "templates/excel"
+    temp_directory: "tmp/excel_processing"
+    cleanup_after_days: 7
+    
+    formatting:
+      auto_resize_columns: true
+      freeze_header_row: true
+      enable_filters: true
+      apply_zebra_striping: true
+      header_background_color: "4F81BD"
+      header_font_color: "FFFFFF"
+      header_font_bold: true
+    
+    gantt_chart:
+      enabled: true
+      include_dependencies: true
+      show_progress_bars: true
+      color_by_status: true
+      max_timeline_months: 6
+    
+    evm:
+      enabled: true
+      forecasting:
+        enabled: false
+      charts:
+        enabled: false
+
+# Test environment settings
+test:
+  excel_export:
+    enabled: false
+    max_export_rows: 100
+    timeout_seconds: 30
+    
+  excel_import:
+    enabled: false
+    max_file_size_mb: 5

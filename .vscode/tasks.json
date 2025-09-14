@@ -1,0 +1,467 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build MSI Installer",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "& { cd src/wix; candle.exe -nologo Product.wxs -dSourceDir=../../ -out ../../build/Product.wixobj; light.exe -nologo ../../build/Product.wixobj -out ../../build/EnhancedRedmineInstaller.msi -ext WixUIExtension }"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": ["Create Build Directory"],
+      "problemMatcher": {
+        "owner": "wix",
+        "fileLocation": "relative",
+        "pattern": {
+          "regexp": "^(.*)\\((\\d+)\\)\\s*:\\s*(warning|error)\\s*(\\w+\\d+)\\s*:\\s*(.*)$",
+          "file": 1,
+          "line": 2,
+          "severity": 3,
+          "code": 4,
+          "message": 5
+        }
+      }
+    },
+    {
+      "label": "Create Build Directory",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "if (!(Test-Path build)) { New-Item -ItemType Directory -Path build }"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": false,
+        "reveal": "silent",
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Validate WiX Files",
+      "type": "shell", 
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "Get-ChildItem -Recurse -Filter '*.wxs' | ForEach-Object { Write-Host \"Validating $_\"; candle.exe -nologo $_.FullName -out temp.wixobj; if ($LASTEXITCODE -eq 0) { Remove-Item temp.wixobj -ErrorAction SilentlyContinue; Write-Host \"✓ Valid\" } else { Write-Host \"✗ Invalid\" } }"
+      ],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Validate YAML Files",
+      "type": "shell",
+      "command": "ruby",
+      "args": [
+        "-e",
+        "require 'yaml'; Dir.glob('**/*.{yml,yaml}').each { |f| begin; YAML.load_file(f); puts \"✓ #{f}\"; rescue => e; puts \"✗ #{f}: #{e.message}\"; exit 1; end }"
+      ],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": {
+        "owner": "yaml",
+        "fileLocation": "relative",
+        "pattern": {
+          "regexp": "^✗\\s*(.*):\\s*(.*)$",
+          "file": 1,
+          "message": 2,
+          "severity": "error"
+        }
+      }
+    },
+    {
+      "label": "Test Ruby Scripts",
+      "type": "shell",
+      "command": "ruby",
+      "args": ["-c", "src/scripts/customize-redmine.rb"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": {
+        "owner": "ruby",
+        "fileLocation": "relative",
+        "pattern": {
+          "regexp": "^(.*):(\\d+):\\s*(.*)",
+          "file": 1,
+          "line": 2,
+          "message": 3,
+          "severity": "error"
+        }
+      }
+    },
+    {
+      "label": "Install Ruby Dependencies",
+      "type": "shell",
+      "command": "bundle",
+      "args": ["install"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$ruby"
+    },
+    {
+      "label": "Run RuboCop",
+      "type": "shell",
+      "command": "bundle",
+      "args": ["exec", "rubocop", "--format", "simple"],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": {
+        "owner": "rubocop",
+        "fileLocation": "absolute",
+        "pattern": {
+          "regexp": "^(.+):(\\d+):(\\d+):\\s+(\\w+):\\s+(.+)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      }
+    },
+    {
+      "label": "Test Excel Configuration",
+      "type": "shell",
+      "command": "ruby",
+      "args": [
+        "-e",
+        "require 'yaml'; config = YAML.load_file('config/excel-config.yml'); puts \"✓ Excel config loaded with #{config.keys.length} environments\""
+      ],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Test Excel Gems",
+      "type": "shell",
+      "command": "ruby",
+      "args": [
+        "-e",
+        "begin; require 'axlsx'; require 'roo'; puts '✓ Excel gems available'; rescue LoadError => e; puts \"✗ Excel gems missing: #{e.message}\"; exit 1; end"
+      ],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Create Excel Test",
+      "type": "shell",
+      "command": "ruby",
+      "args": [
+        "-e",
+        "require 'axlsx'; p = Axlsx::Package.new; wb = p.workbook; ws = wb.add_worksheet(name: 'Test'); ws.add_row ['ID', 'Subject', 'Status']; ws.add_row [1, 'Test Issue', 'New']; p.serialize('test_output.xlsx'); puts '✓ Excel test file created'; File.delete('test_output.xlsx')"
+      ],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Run All Tests",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Validate WiX Files",
+        "Validate YAML Files", 
+        "Test Ruby Scripts",
+        "Test Excel Configuration",
+        "Test Excel Gems",
+        "Create Excel Test"
+      ],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Clean Build",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "if (Test-Path build) { Remove-Item -Recurse -Force build }; if (Test-Path temp) { Remove-Item -Recurse -Force temp }; Write-Host 'Build directories cleaned'"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Start Local Redmine",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "run", "-d", 
+        "--name", "redmine-dev",
+        "-p", "3000:3000",
+        "-e", "REDMINE_DB_MYSQL=host.docker.internal",
+        "-e", "REDMINE_DB_DATABASE=redmine_development", 
+        "-e", "REDMINE_DB_USERNAME=redmine",
+        "-e", "REDMINE_DB_PASSWORD=redmine",
+        "bitnami/redmine:5.0.5"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Stop Local Redmine",
+      "type": "shell", 
+      "command": "docker",
+      "args": ["stop", "redmine-dev", "&&", "docker", "rm", "redmine-dev"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Package Templates",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "Compress-Archive -Path templates/* -DestinationPath build/excel-templates.zip -Force; Write-Host 'Excel templates packaged'"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": ["Create Build Directory"]
+    },
+    {
+      "label": "Create Documentation",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "Get-ChildItem -Recurse -Include '*.md', '*.rb', '*.bat', '*.yml', '*.wxs' | ForEach-Object { $_.FullName.Replace((Get-Location).Path, '.') } | Out-File -FilePath build/file-listing.txt; Write-Host 'Documentation created'"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "dependsOn": ["Create Build Directory"]
+    },
+    {
+      "label": "Generate Hash for Installer",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "if (Test-Path build/EnhancedRedmineInstaller.msi) { Get-FileHash build/EnhancedRedmineInstaller.msi -Algorithm SHA256 | Select-Object Hash | Out-File build/EnhancedRedmineInstaller.msi.sha256; Write-Host 'Hash generated' } else { Write-Host 'Installer not found' }"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Full Build",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Clean Build",
+        "Run All Tests",
+        "Build MSI Installer",
+        "Package Templates",
+        "Generate Hash for Installer",
+        "Create Documentation"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Quick Build",
+      "dependsOrder": "sequence", 
+      "dependsOn": [
+        "Validate WiX Files",
+        "Build MSI Installer"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Development Setup",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Install Ruby Dependencies",
+        "Validate YAML Files",
+        "Test Excel Configuration",
+        "Start Local Redmine"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always", 
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Watch Files",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "$watcher = New-Object System.IO.FileSystemWatcher; $watcher.Path = '.'; $watcher.Filter = '*.*'; $watcher.IncludeSubdirectories = $true; $watcher.EnableRaisingEvents = $true; Register-ObjectEvent $watcher 'Changed' -Action { Write-Host \"File changed: $($Event.SourceEventArgs.FullPath)\" }; Write-Host 'Watching for file changes... Press Ctrl+C to stop'; try { while ($true) { Start-Sleep 1 } } finally { $watcher.Dispose() }"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "isBackground": true,
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open Build Folder",
+      "type": "shell",
+      "command": "explorer",
+      "args": ["build"],
+      "group": "build",
+      "presentation": {
+        "echo": false,
+        "reveal": "never"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Open Redmine in Browser",
+      "type": "shell",
+      "command": "start",
+      "args": ["http://localhost:3000"],
+      "group": "build", 
+      "presentation": {
+        "echo": false,
+        "reveal": "never"
+      },
+      "windows": {
+        "command": "start",
+        "args": ["http://localhost:3000"]
+      },
+      "linux": {
+        "command": "xdg-open", 
+        "args": ["http://localhost:3000"]
+      },
+      "osx": {
+        "command": "open",
+        "args": ["http://localhost:3000"]
+      }
+    }
+  ]
+}

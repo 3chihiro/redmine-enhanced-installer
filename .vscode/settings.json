@@ -1,0 +1,338 @@
+{
+  "// Enhanced Redmine Installer - VS Code Settings": true,
+  
+  "// Editor Configuration": {},
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": true,
+  "editor.trimAutoWhitespace": true,
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": true,
+    "source.organizeImports": true
+  },
+  "editor.rulers": [80, 120],
+  "editor.wordWrap": "wordWrapColumn",
+  "editor.wordWrapColumn": 120,
+  
+  "// File Associations": {},
+  "files.associations": {
+    "*.wxs": "xml",
+    "*.wxi": "xml",
+    "*.yml": "yaml",
+    "*.yaml": "yaml",
+    "*.rb": "ruby",
+    "*.bat": "bat",
+    "*.cmd": "bat",
+    "Gemfile": "ruby",
+    "Rakefile": "ruby",
+    "*.gemspec": "ruby"
+  },
+  
+  "// File Encoding and Line Endings": {},
+  "files.encoding": "utf8",
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.trimFinalNewlines": true,
+  
+  "// Auto Save Configuration": {},
+  "files.autoSave": "onFocusChange",
+  "files.autoSaveDelay": 1000,
+  
+  "// Files to exclude from explorer": {},
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "**/tmp": true,
+    "**/temp": true,
+    "**/*.log": true,
+    "**/*.tmp": true,
+    "**/build": true,
+    "**/dist": true,
+    "**/.bundle": true,
+    "**/vendor/bundle": true,
+    "**/.sass-cache": true
+  },
+  
+  "// Search Configuration": {},
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/vendor": true,
+    "**/build": true,
+    "**/dist": true,
+    "**/*.log": true,
+    "**/tmp": true,
+    "**/temp": true,
+    "**/.git": true,
+    "**/.bundle": true,
+    "**/coverage": true
+  },
+  
+  "// Ruby Language Settings": {},
+  "ruby.intellisense": "rubyLocate",
+  "ruby.codeCompletion": "rcodetools",
+  "ruby.format": "rubocop",
+  "ruby.lint": {
+    "rubocop": true,
+    "ruby": true,
+    "fasterer": false,
+    "debride": false,
+    "ruby-lint": false
+  },
+  "ruby.locate": {
+    "include": "**/*.rb",
+    "exclude": "{**/@(test|spec|tmp|.*),**/vendor/**}"
+  },
+  
+  "// YAML Language Settings": {},
+  "yaml.format.enable": true,
+  "yaml.validate": true,
+  "yaml.hover": true,
+  "yaml.completion": true,
+  "yaml.schemas": {
+    "https://json.schemastore.org/github-workflow.json": "/.github/workflows/*.yml",
+    "https://json.schemastore.org/github-action.json": "/.github/actions/*/action.yml"
+  },
+  
+  "// XML Language Settings": {},
+  "xml.format.enabled": true,
+  "xml.validation.enabled": true,
+  "xml.completion.autoCloseTags": true,
+  "xml.codeLens.enabled": true,
+  
+  "// Git Configuration": {},
+  "git.ignoreLimitWarning": true,
+  "git.autofetch": true,
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+  "git.postCommitCommand": "none",
+  
+  "// Terminal Configuration": {},
+  "terminal.integrated.defaultProfile.windows": "Command Prompt",
+  "terminal.integrated.profiles.windows": {
+    "Command Prompt": {
+      "path": "${env:windir}\\System32\\cmd.exe",
+      "args": [],
+      "icon": "terminal-cmd"
+    },
+    "PowerShell": {
+      "source": "PowerShell",
+      "icon": "terminal-powershell"
+    },
+    "Git Bash": {
+      "path": "${env:ProgramFiles}\\Git\\bin\\bash.exe",
+      "args": ["--login"],
+      "icon": "terminal-bash"
+    },
+    "Ruby": {
+      "path": "ruby.exe",
+      "args": ["-v"],
+      "icon": "ruby"
+    }
+  },
+  
+  "// Extension Settings": {},
+  
+  "// Ruby Extension Settings": {},
+  "solargraph.useBundler": true,
+  "solargraph.bundlerPath": "bundle",
+  "solargraph.commandPath": "solargraph",
+  "solargraph.diagnostics": true,
+  "solargraph.completion": true,
+  "solargraph.hover": true,
+  "solargraph.symbols": true,
+  "solargraph.definitions": true,
+  "solargraph.rename": true,
+  "solargraph.references": true,
+  "solargraph.formatting": true,
+  
+  "// RuboCop Extension Settings": {},
+  "ruby.rubocop.executePath": "bundle exec rubocop",
+  "ruby.rubocop.configFilePath": ".rubocop.yml",
+  "ruby.rubocop.onSave": true,
+  
+  "// WiX Extension Settings": {},
+  "wix.candle.executable": "candle.exe",
+  "wix.light.executable": "light.exe",
+  "wix.heat.executable": "heat.exe",
+  "wix.validate.enabled": true,
+  
+  "// PowerShell Extension Settings": {},
+  "powershell.codeFormatting.preset": "OTBS",
+  "powershell.codeFormatting.openBraceOnSameLine": true,
+  "powershell.codeFormatting.newLineAfterOpenBrace": true,
+  "powershell.codeFormatting.newLineAfterCloseBrace": true,
+  "powershell.codeFormatting.whitespaceBeforeOpenBrace": true,
+  "powershell.codeFormatting.whitespaceBeforeOpenParen": true,
+  "powershell.codeFormatting.whitespaceAroundOperator": true,
+  "powershell.codeFormatting.whitespaceAfterSeparator": true,
+  "powershell.codeFormatting.ignoreOneLineBlock": true,
+  
+  "// GitHub Actions Extension": {},
+  "github-actions.workflows.pinned.workflows": [
+    ".github/workflows/build-installer.yml"
+  ],
+  "github-actions.workflows.pinned.refresh.enabled": true,
+  "github-actions.workflows.pinned.refresh.interval": 300,
+  
+  "// Docker Extension Settings": {},
+  "docker.showStartPage": false,
+  "docker.defaultRegistryPath": "enhancedredmine",
+  
+  "// Excel/Spreadsheet Settings": {},
+  "vscode-excel-viewer.enableAutoSave": false,
+  "rainbow-csv.enable_auto_csv_lint": true,
+  "rainbow-csv.autodetect_separators": [",", ";", "|", "\t"],
+  
+  "// Code Quality Tools": {},
+  "sonarlint.connectedMode.project": {
+    "connectionId": "enhanced-redmine",
+    "projectKey": "enhanced-redmine-installer"
+  },
+  
+  "// Spell Checker Configuration": {},
+  "cSpell.words": [
+    "Redmine",
+    "Bitnami",
+    "axlsx",
+    "rubocop",
+    "solargraph",
+    "gantt",
+    "xlsx",
+    "yaml",
+    "wxs",
+    "wxi",
+    "msi",
+    "candle",
+    "light",
+    "heat",
+    "wix",
+    "mysql",
+    "postgresql",
+    "sqlite",
+    "gemfile",
+    "rakefile",
+    "bundler",
+    "rspec",
+    "capybara",
+    "webrick",
+    "puma",
+    "passenger",
+    "nginx",
+    "apache",
+    "unicorn",
+    "sidekiq",
+    "resque",
+    "redis",
+    "memcached",
+    "elasticsearch",
+    "solr",
+    "ldap",
+    "saml",
+    "oauth",
+    "api",
+    "json",
+    "xml",
+    "csv",
+    "pdf",
+    "svg",
+    "png",
+    "jpg",
+    "gif",
+    "css",
+    "scss",
+    "sass",
+    "javascript",
+    "coffeescript",
+    "typescript",
+    "webpack",
+    "babel",
+    "eslint",
+    "prettier",
+    "dockerfile",
+    "kubernetes",
+    "helm",
+    "terraform",
+    "ansible",
+    "vagrant",
+    "virtualbox",
+    "vmware",
+    "hyper-v",
+    "powershell",
+    "cmd",
+    "bash",
+    "zsh",
+    "fish",
+    "enhanced"
+  ],
+  "cSpell.enableFiletypes": [
+    "bat",
+    "ruby",
+    "yaml",
+    "xml",
+    "powershell",
+    "dockerfile"
+  ],
+  
+  "// Workspace Trust": {},
+  "security.workspace.trust.untrustedFiles": "open",
+  "security.workspace.trust.banner": "never",
+  "security.workspace.trust.startupPrompt": "once",
+  
+  "// IntelliSense and Auto-completion": {},
+  "editor.quickSuggestions": {
+    "other": true,
+    "comments": true,
+    "strings": true
+  },
+  "editor.suggestSelection": "first",
+  "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
+  
+  "// Debugging Configuration": {},
+  "debug.allowBreakpointsEverywhere": true,
+  "debug.inlineValues": true,
+  "debug.showInStatusBar": "always",
+  
+  "// Task Configuration": {},
+  "task.autoDetect": "on",
+  "task.showDecorations": true,
+  
+  "// Integrated Terminal": {},
+  "terminal.integrated.enableMultiLinePasteWarning": false,
+  "terminal.integrated.copyOnSelection": true,
+  "terminal.integrated.rightClickBehavior": "paste",
+  
+  "// Workbench Configuration": {},
+  "workbench.colorTheme": "Default Dark+",
+  "workbench.iconTheme": "vs-seti",
+  "workbench.startupEditor": "readme",
+  "workbench.tips.enabled": false,
+  
+  "// Explorer Configuration": {},
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+  "explorer.sortOrder": "type",
+  "explorer.autoReveal": true,
+  
+  "// Problems Configuration": {},
+  "problems.autoReveal": true,
+  "problems.showCurrentInStatus": true,
+  
+  "// Live Share Configuration": {},
+  "liveshare.featureSet": "insiders",
+  "liveshare.guestApprovalRequired": false,
+  "liveshare.showInStatusBar": "whileCollaborating",
+  
+  "// Remote Development": {},
+  "remote.autoForwardPorts": false,
+  "remote.restoreForwardedPorts": true
+}

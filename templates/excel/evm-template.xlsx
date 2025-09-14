@@ -1,0 +1,365 @@
+# Enhanced Redmine EVM (Earned Value Management) Template
+# Professional EVM reporting template with advanced analytics
+
+template_info:
+  name: "Enhanced EVM Analysis Template" 
+  version: "1.0.0"
+  author: "Enhanced Redmine Team"
+  description: "Comprehensive EVM analysis with performance indicators and forecasting"
+
+worksheets:
+  - name: "EVM Dashboard"
+    type: "dashboard"
+    content:
+      - type: "kpi_cards"
+        position: "A1:P6"
+        cards:
+          - title: "Schedule Performance Index (SPI)"
+            formula: "=EV/PV"
+            format: "0.00"
+            threshold_good: ">= 1.0"
+            threshold_warning: ">= 0.9"
+            
+          - title: "Cost Performance Index (CPI)"
+            formula: "=EV/AC"
+            format: "0.00"
+            threshold_good: ">= 1.0"
+            threshold_warning: ">= 0.9"
+            
+          - title: "Schedule Variance (SV)"
+            formula: "=EV-PV"
+            format: "$#,##0"
+            threshold_good: ">= 0"
+            
+          - title: "Cost Variance (CV)"
+            formula: "=EV-AC"
+            format: "$#,##0"
+            threshold_good: ">= 0"
+            
+      - type: "chart"
+        title: "EVM Performance Chart"
+        position: "A8:P25"
+        chart_type: "line"
+        series:
+          - "Planned Value (PV)"
+          - "Earned Value (EV)"
+          - "Actual Cost (AC)"
+        x_axis: "Time Period"
+        y_axis: "Value ($)"
+        
+      - type: "chart"
+        title: "Performance Indices Trend"
+        position: "A27:H40"
+        chart_type: "line"
+        series:
+          - "SPI"
+          - "CPI"
+        reference_line: 1.0
+        
+      - type: "chart"
+        title: "Variance Analysis"
+        position: "J27:P40"
+        chart_type: "column"
+        series:
+          - "Schedule Variance"
+          - "Cost Variance"
+
+  - name: "EVM Data"
+    headers:
+      - column: A
+        title: "Time Period"
+        width: 15
+        format: "date"
+        
+      - column: B
+        title: "Planned Value (PV)"
+        width: 18
+        format: "currency"
+        
+      - column: C
+        title: "Earned Value (EV)"
+        width: 18
+        format: "currency"
+        
+      - column: D
+        title: "Actual Cost (AC)"
+        width: 18
+        format: "currency"
+        
+      - column: E
+        title: "Budget at Completion (BAC)"
+        width: 20
+        format: "currency"
+        
+      - column: F
+        title: "Schedule Variance (SV)"
+        width: 20
+        format: "currency"
+        formula: "=C{row}-B{row}"
+        
+      - column: G
+        title: "Cost Variance (CV)"
+        width: 18
+        format: "currency"
+        formula: "=C{row}-D{row}"
+        
+      - column: H
+        title: "Schedule Performance Index (SPI)"
+        width: 25
+        format: "0.00"
+        formula: "=C{row}/B{row}"
+        
+      - column: I
+        title: "Cost Performance Index (CPI)"
+        width: 25
+        format: "0.00"
+        formula: "=C{row}/D{row}"
+        
+      - column: J
+        title: "Estimate at Completion (EAC)"
+        width: 25
+        format: "currency"
+        formula: "=E{row}/I{row}"
+        
+      - column: K
+        title: "Estimate to Complete (ETC)"
+        width: 22
+        format: "currency"
+        formula: "=J{row}-D{row}"
+        
+      - column: L
+        title: "To Complete Performance Index (TCPI)"
+        width: 30
+        format: "0.00"
+        formula: "=(E{row}-C{row})/(E{row}-D{row})"
+        
+      - column: M
+        title: "Variance at Completion (VAC)"
+        width: 25
+        format: "currency"
+        formula: "=E{row}-J{row}"
+        
+      - column: N
+        title: "% Complete (Planned)"
+        width: 20
+        format: "percentage"
+        
+      - column: O
+        title: "% Complete (Actual)"
+        width: 20
+        format: "percentage"
+
+  - name: "Forecasting"
+    headers:
+      - column: A
+        title: "Forecast Period"
+        width: 15
+        format: "date"
+        
+      - column: B
+        title: "Forecasted EV"
+        width: 18
+        format: "currency"
+        
+      - column: C
+        title: "Forecasted AC"
+        width: 18
+        format: "currency"
+        
+      - column: D
+        title: "Confidence Level"
+        width: 15
+        format: "percentage"
+        
+      - column: E
+        title: "Risk Factor"
+        width: 15
+        format: "0.00"
+        
+      - column: F
+        title: "Trend Analysis"
+        width: 20
+        format: "text"
+        
+    content:
+      - type: "chart"
+        title: "EVM Forecast"
+        position: "H1:P20"
+        chart_type: "line"
+        series:
+          - "Historical EV"
+          - "Forecasted EV"
+          - "Historical AC"
+          - "Forecasted AC"
+          - "Planned Value"
+
+  - name: "Performance Analysis"
+    sections:
+      - title: "Current Status"
+        position: "A1:F15"
+        metrics:
+          - "Project Completion %"
+          - "Schedule Performance"
+          - "Cost Performance"
+          - "Quality Performance"
+          - "Resource Utilization"
+          
+      - title: "Trend Analysis"
+        position: "H1:N15"
+        content:
+          - "Performance trend over last 6 periods"
+          - "Variance trend analysis"
+          - "Efficiency improvements"
+          
+      - title: "Risk Indicators"
+        position: "A17:F30"
+        alerts:
+          - condition: "SPI < 0.9"
+            message: "Schedule performance below acceptable threshold"
+            severity: "high"
+          - condition: "CPI < 0.9"
+            message: "Cost performance below acceptable threshold"
+            severity: "high"
+          - condition: "TCPI > 1.1"
+            message: "Future performance requirements unrealistic"
+            severity: "medium"
+            
+      - title: "Action Items"
+        position: "H17:N30"
+        format: "action_log"
+        columns:
+          - "Issue"
+          - "Action Required"
+          - "Owner"
+          - "Due Date"
+          - "Status"
+
+  - name: "Project Details"
+    headers:
+      - column: A
+        title: "Task/Work Package"
+        width: 30
+        format: "text"
+        
+      - column: B
+        title: "Planned Start"
+        width: 15
+        format: "date"
+        
+      - column: C
+        title: "Planned Finish"
+        width: 15
+        format: "date"
+        
+      - column: D
+        title: "Actual Start"
+        width: 15
+        format: "date"
+        
+      - column: E
+        title: "Actual Finish"
+        width: 15
+        format: "date"
+        
+      - column: F
+        title: "Planned Hours"
+        width: 15
+        format: "number"
+        
+      - column: G
+        title: "Actual Hours"
+        width: 15
+        format: "number"
+        
+      - column: H
+        title: "% Complete"
+        width: 12
+        format: "percentage"
+        
+      - column: I
+        title: "Earned Hours"
+        width: 15
+        format: "number"
+        formula: "=F{row}*H{row}"
+        
+      - column: J
+        title: "Resource"
+        width: 20
+        format: "text"
+
+formatting:
+  header_row:
+    background_color: "2E75B6"
+    font_color: "FFFFFF"
+    font_bold: true
+    font_size: 12
+    
+  data_rows:
+    font_size: 10
+    zebra_striping: true
+    
+  kpi_cards:
+    good_performance:
+      background_color: "C6EFCE"
+      font_color: "006100"
+    warning_performance:
+      background_color: "FFEB9C"
+      font_color: "9C5700"
+    poor_performance:
+      background_color: "FFC7CE"
+      font_color: "9C0006"
+
+conditional_formatting:
+  - range: "SPI_column"
+    rules:
+      - condition: ">= 1.0"
+        background_color: "C6EFCE"
+      - condition: ">= 0.9"
+        background_color: "FFEB9C"
+      - condition: "< 0.9"
+        background_color: "FFC7CE"
+        
+  - range: "CPI_column"
+    rules:
+      - condition: ">= 1.0"
+        background_color: "C6EFCE"
+      - condition: ">= 0.9"
+        background_color: "FFEB9C"
+      - condition: "< 0.9"
+        background_color: "FFC7CE"
+
+charts:
+  s_curve:
+    type: "line_smooth"
+    title: "Project S-Curve"
+    x_axis: "Time (% of project duration)"
+    y_axis: "Cumulative Value (% of BAC)"
+    series:
+      - name: "Planned Value (PV)"
+        color: "0070C0"
+      - name: "Earned Value (EV)"
+        color: "00B050"
+      - name: "Actual Cost (AC)"
+        color: "FF0000"
+
+data_validation:
+  percentage_complete:
+    range: "H:H"
+    type: "decimal"
+    minimum: 0
+    maximum: 1
+    
+  dates:
+    type: "date"
+    allow_past: true
+    
+calculations:
+  evm_formulas:
+    - "SV = EV - PV"
+    - "CV = EV - AC"
+    - "SPI = EV / PV"
+    - "CPI = EV / AC"
+    - "EAC = BAC / CPI"
+    - "ETC = EAC - AC"
+    - "TCPI = (BAC - EV) / (BAC - AC)"
+    - "VAC = BAC - EAC"

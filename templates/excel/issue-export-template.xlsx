@@ -1,0 +1,165 @@
+# Enhanced Redmine Issue Export Template
+# This is a placeholder file for Excel template
+# In a real implementation, this would be a binary Excel file (.xlsx)
+# Created using Excel automation or library like axlsx
+
+template_info:
+  name: "Enhanced Issue Export Template"
+  version: "1.0.0"
+  author: "Enhanced Redmine Team"
+  description: "Professional Excel template for issue export with advanced formatting"
+  
+worksheets:
+  - name: "Issues"
+    headers:
+      - column: A
+        title: "ID"
+        width: 10
+        format: "number"
+        
+      - column: B
+        title: "Project"
+        width: 20
+        format: "text"
+        
+      - column: C
+        title: "Tracker"
+        width: 15
+        format: "text"
+        
+      - column: D
+        title: "Subject"
+        width: 40
+        format: "text"
+        
+      - column: E
+        title: "Description"
+        width: 50
+        format: "text"
+        wrap_text: true
+        
+      - column: F
+        title: "Status"
+        width: 15
+        format: "text"
+        
+      - column: G
+        title: "Priority"
+        width: 15
+        format: "text"
+        
+      - column: H
+        title: "Assigned To"
+        width: 20
+        format: "text"
+        
+      - column: I
+        title: "Author"
+        width: 20
+        format: "text"
+        
+      - column: J
+        title: "Start Date"
+        width: 15
+        format: "date"
+        
+      - column: K
+        title: "Due Date"
+        width: 15
+        format: "date"
+        
+      - column: L
+        title: "Progress %"
+        width: 12
+        format: "percentage"
+        
+      - column: M
+        title: "Estimated Hours"
+        width: 15
+        format: "number"
+        
+      - column: N
+        title: "Spent Hours"
+        width: 15
+        format: "number"
+        
+      - column: O
+        title: "Created On"
+        width: 18
+        format: "datetime"
+        
+      - column: P
+        title: "Updated On"
+        width: 18
+        format: "datetime"
+
+  - name: "Summary"
+    type: "dashboard"
+    content:
+      - type: "chart"
+        title: "Issues by Status"
+        position: "A1:F15"
+        chart_type: "pie"
+        
+      - type: "chart"
+        title: "Issues by Priority"
+        position: "H1:N15"
+        chart_type: "column"
+        
+      - type: "table"
+        title: "Project Statistics"
+        position: "A17:F25"
+        
+formatting:
+  header_row:
+    background_color: "4F81BD"
+    font_color: "FFFFFF"
+    font_bold: true
+    font_size: 12
+    
+  data_rows:
+    font_size: 10
+    zebra_striping: true
+    zebra_color1: "FFFFFF"
+    zebra_color2: "F2F2F2"
+    
+  borders:
+    style: "thin"
+    color: "CCCCCC"
+    
+  filters:
+    enabled: true
+    freeze_panes: "A2"
+
+conditional_formatting:
+  - range: "F:F"  # Status column
+    rules:
+      - condition: "New"
+        background_color: "E6F3FF"
+      - condition: "In Progress" 
+        background_color: "FFF2CC"
+      - condition: "Resolved"
+        background_color: "E2EFDA"
+      - condition: "Closed"
+        background_color: "F2F2F2"
+        
+  - range: "G:G"  # Priority column
+    rules:
+      - condition: "Immediate"
+        background_color: "FFCCCC"
+        font_color: "CC0000"
+      - condition: "High"
+        background_color: "FFE6CC"
+      - condition: "Normal"
+        background_color: "FFFFFF"
+      - condition: "Low"
+        background_color: "E6F3FF"
+        
+  - range: "K:K"  # Due Date column
+    rules:
+      - condition: "overdue"
+        background_color: "FFCCCC"
+      - condition: "due_today"
+        background_color: "FFFF99"
+      - condition: "due_soon"
+        background_color: "CCE5FF"

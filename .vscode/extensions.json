@@ -1,0 +1,102 @@
+{
+  "recommendations": [
+    // Core Language Support
+    "rebornix.ruby",
+    "castwide.solargraph", 
+    "misogi.ruby-rubocop",
+    "kaiwood.endwise",
+    
+    // Configuration File Support  
+    "redhat.vscode-yaml",
+    "ms-vscode.vscode-json",
+    "dotjoshjohnson.xml",
+    "ms-vscode.powershell",
+    
+    // WiX Toolset Support
+    "ms-vscode.wix",
+    "tintinweb.vscode-wix",
+    
+    // Git and Version Control
+    "eamodio.gitlens",
+    "github.vscode-pull-request-github",
+    "github.github-vscode-theme",
+    "github.vscode-github-actions",
+    
+    // Docker Support
+    "ms-azuretools.vscode-docker",
+    
+    // Database Tools
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-mysql",
+    "mtxr.sqltools-driver-sqlite",
+    
+    // Excel and CSV Support
+    "grapecity.gc-excelviewer",
+    "mechatroner.rainbow-csv",
+    "janisdd.vscode-edit-csv",
+    
+    // Code Quality and Analysis
+    "sonarsource.sonarlint-vscode",
+    "streetsidesoftware.code-spell-checker",
+    "editorconfig.editorconfig",
+    "esbenp.prettier-vscode",
+    
+    // Documentation
+    "yzhang.markdown-all-in-one",
+    "davidanson.vscode-markdownlint",
+    "bierner.markdown-mermaid",
+    "shd101wyy.markdown-preview-enhanced",
+    
+    // Productivity Tools
+    "ms-vscode.vscode-todo-highlight",
+    "gruntfuggly.todo-tree",
+    "alefragnani.bookmarks",
+    "formulahendry.auto-rename-tag",
+    "ms-vscode.vscode-typescript-next",
+    
+    // Debugging and Testing
+    "ms-vscode.vscode-js-debug",
+    "hbenl.vscode-test-explorer",
+    "connorshea.vscode-ruby-test-adapter",
+    
+    // Remote Development
+    "ms-vscode-remote.remote-containers",
+    "ms-vscode-remote.remote-wsl",
+    "ms-vscode-remote.remote-ssh",
+    
+    // Live Share
+    "ms-vsliveshare.vsliveshare",
+    
+    // IntelliCode
+    "visualstudioexptteam.vscodeintellicode",
+    
+    // Theme and UI Enhancements  
+    "pkief.material-icon-theme",
+    "zhuangtongfa.material-theme",
+    "ms-vscode.theme-tomorrow-kit",
+    
+    // Utility Extensions
+    "ms-vscode.hexeditor",
+    "tomoki1207.pdf",
+    "ms-vscode.vscode-typescript-next",
+    "bradlc.vscode-tailwindcss",
+    
+    // Batch/Command Line Support
+    "ms-vscode.batch",
+    "rogalmic.bash-debug",
+    
+    // Archive Support
+    "slevesque.vscode-zipexplorer"
+  ],
+  "unwantedRecommendations": [
+    // Extensions that may conflict or are not needed
+    "ms-python.python",
+    "ms-dotnettools.csharp", 
+    "ms-vscode.cpptools",
+    "golang.go",
+    "rust-lang.rust-analyzer",
+    "ms-vscode.vscode-java-pack",
+    "bradlc.vscode-tailwindcss",
+    "ms-toolsai.jupyter"
+  ]
+}

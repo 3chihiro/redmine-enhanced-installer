@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" 
+           Name="Enhanced Redmine Installer" 
+           Language="1033" 
+           Version="5.0.5.0" 
+           Manufacturer="Redmine Enhanced Team"
+           UpgradeCode="12345678-1234-1234-1234-123456789012">
+    
+    <Package InstallerVersion="200" 
+             Compressed="yes" 
+             InstallScope="perMachine"
+             Description="Enhanced Redmine with Gantt Charts, EVM, Excel Export and Advanced Reporting Plugins" />
+
+    <!-- Define installation directory structure -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="Enhanced Redmine">
+          
+          <!-- Bitnami Redmine Core -->
+          <Directory Id="RedmineCore" Name="redmine">
+            <Directory Id="PluginsDir" Name="plugins">
+              <!-- Plugin directories will be created here -->
+            </Directory>
+            <Directory Id="ConfigDir" Name="config">
+              <Directory Id="ExcelConfigDir" Name="excel" />
+            </Directory>
+            <Directory Id="PublicDir" Name="public">
+              <Directory Id="AssetsDir" Name="assets" />
+            </Directory>
+          </Directory>
+          
+          <!-- Scripts Directory -->
+          <Directory Id="ScriptsDir" Name="scripts" />
+          
+          <!-- Templates Directory -->
+          <Directory Id="TemplatesDir" Name="templates">
+            <Directory Id="ExcelTemplatesDir" Name="excel" />
+          </Directory>
+          
+          <!-- Log Directory -->
+          <Directory Id="LogDir" Name="logs" />
+          
+        </Directory>
+      </Directory>
+      
+      <!-- Start Menu Shortcuts -->
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="Enhanced Redmine" />
+      </Directory>
+      
+      <!-- Desktop Shortcuts -->
+      <Directory Id="DesktopFolder" />
+    </Directory>
+
+    <!-- Component Groups -->
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+      
+      <!-- Main Application Files -->
+      <Component Id="MainExecutable">
+        <File Id="StartRedmineScript" 
+              Source="$(var.SourceDir)\scripts\start-redmine.bat" 
+              KeyPath="yes" />
+        <File Id="InstallPluginsScript" 
+              Source="$(var.SourceDir)\scripts\install-plugins.bat" />
+        <File Id="ConfigureExcelScript" 
+              Source="$(var.SourceDir)\scripts\configure-excel.bat" />
+        <File Id="CustomizeRedmineScript" 
+              Source="$(var.SourceDir)\scripts\customize-redmine.rb" />
+      </Component>
+
+      <!-- Configuration Files -->
+      <Component Id="ConfigurationFiles" Directory="ExcelConfigDir">
+        <File Id="ExcelConfig" 
+              Source="$(var.SourceDir)\config\excel-config.yml" 
+              KeyPath="yes" />
+      </Component>
+
+      <!-- Excel Templates -->
+      <Component Id="ExcelTemplates" Directory="ExcelTemplatesDir">
+        <File Id="GanttTemplate" 
+              Source="$(var.SourceDir)\templates\gantt-template.xlsx" 
+              KeyPath="yes" />
+        <File Id="ReportTemplate" 
+              Source="$(var.SourceDir)\templates\report-template.xlsx" />
+        <File Id="EVMTemplate" 
+              Source="$(var.SourceDir)\templates\evm-template.xlsx" />
+        <File Id="IssueExportTemplate" 
+              Source="$(var.SourceDir)\templates\issue-export-template.xlsx" />
+      </Component>
+
+      <!-- Registry Entries -->
+      <Component Id="RegistryEntries" Directory="INSTALLFOLDER">
+        <RegistryKey Root="HKLM" Key="SOFTWARE\Enhanced Redmine">
+          <RegistryValue Name="InstallPath" Value="[INSTALLFOLDER]" Type="string" KeyPath="yes" />
+          <RegistryValue Name="Version" Value="5.0.5" Type="string" />
+          <RegistryValue Name="ExcelPluginEnabled" Value="1" Type="integer" />
+          <RegistryValue Name="GanttPluginEnabled" Value="1" Type="integer" />
+          <RegistryValue Name="EVMPluginEnabled" Value="1" Type="integer" />
+        </RegistryKey>
+      </Component>
+
+      <!-- Windows Service Configuration -->
+      <Component Id="ServiceConfig" Directory="INSTALLFOLDER">
+        <ServiceInstall Id="RedmineService" 
+                       Name="Enhanced Redmine Service"
+                       DisplayName="Enhanced Redmine Web Application Service"
+                       Description="Enhanced Redmine project management web application with advanced plugins"
+                       Type="ownProcess"
+                       Start="auto"
+                       Account="LocalSystem"
+                       ErrorControl="normal"
+                       Arguments="-f [INSTALLFOLDER]scripts\start-redmine.bat" />
+        <ServiceControl Id="StartRedmineService" 
+                       Name="Enhanced Redmine Service" 
+                       Start="install" 
+                       Stop="both" 
+                       Remove="uninstall" 
+                       Wait="yes" />
+      </Component>
+
+      <!-- Start Menu Shortcuts -->
+      <Component Id="StartMenuShortcuts" Directory="ApplicationProgramsFolder">
+        <Shortcut Id="StartRedmineShortcut"
+                 Name="Enhanced Redmine"
+                 Description="Start Enhanced Redmine Web Application"
+                 Target="[INSTALLFOLDER]scripts\start-redmine.bat"
+                 WorkingDirectory="INSTALLFOLDER"
+                 Icon="RedmineIcon" />
+        <Shortcut Id="ConfigureExcelShortcut"
+                 Name="Configure Excel Features"
+                 Description="Configure Excel Export and Integration Features"
+                 Target="[INSTALLFOLDER]scripts\configure-excel.bat"
+                 WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="RemoveApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" 
+                      Key="Software\Microsoft\Enhanced Redmine" 
+                      Name="StartMenuInstalled" 
+                      Type="integer" 
+                      Value="1" 
+                      KeyPath="yes" />
+      </Component>
+
+      <!-- Desktop Shortcut -->
+      <Component Id="DesktopShortcut" Directory="DesktopFolder">
+        <Shortcut Id="DesktopRedmineShortcut"
+                 Name="Enhanced Redmine"
+                 Description="Enhanced Redmine Project Management"
+                 Target="http://localhost:3000"
+                 Icon="RedmineIcon" />
+        <RegistryValue Root="HKCU" 
+                      Key="Software\Microsoft\Enhanced Redmine" 
+                      Name="DesktopShortcut" 
+                      Type="integer" 
+                      Value="1" 
+                      KeyPath="yes" />
+      </Component>
+
+    </ComponentGroup>
+
+    <!-- Features -->
+    <Feature Id="ProductFeature" Title="Enhanced Redmine Core" Level="1" AllowAdvertise="no">
+      <ComponentGroupRef Id="ProductComponents" />
+      
+      <Feature Id="ExcelIntegration" 
+               Title="Excel Integration Features" 
+               Description="Advanced Excel export and import capabilities with custom templates"
+               Level="1" 
+               AllowAdvertise="no">
+        <ComponentRef Id="ExcelTemplates" />
+      </Feature>
+      
+      <Feature Id="GanttCharts" 
+               Title="Advanced Gantt Charts" 
+               Description="Professional Gantt chart functionality with timeline management"
+               Level="1" 
+               AllowAdvertise="no" />
+      
+      <Feature Id="EVMTracking" 
+               Title="Earned Value Management (EVM)" 
+               Description="Project performance tracking using EVM methodology"
+               Level="1" 
+               AllowAdvertise="no" />
+      
+      <Feature Id="AdvancedReporting" 
+               Title="Advanced Reporting Engine" 
+               Description="Comprehensive reporting with custom dashboards and analytics"
+               Level="1" 
+               AllowAdvertise="no" />
+      
+      <Feature Id="WindowsService" 
+               Title="Windows Service Integration" 
+               Description="Run Redmine as a Windows service for automatic startup"
+               Level="2" 
+               AllowAdvertise="no">
+        <ComponentRef Id="ServiceConfig" />
+      </Feature>
+    </Feature>
+
+    <!-- UI Configuration -->
+    <UIRef Id="WixUI_FeatureTree" />
+    <UIRef Id="WixUI_ErrorProgressText" />
+
+    <!-- Custom Actions for Post-Installation -->
+    <CustomAction Id="InstallBitnamiRedmine" 
+                  Directory="INSTALLFOLDER" 
+                  ExeCommand="[INSTALLFOLDER]scripts\install-plugins.bat"
+                  Execute="deferred" 
+                  Impersonate="no" 
+                  Return="check" />
+    
+    <CustomAction Id="ConfigureExcelFeatures" 
+                  Directory="INSTALLFOLDER" 
+                  ExeCommand="[INSTALLFOLDER]scripts\configure-excel.bat"
+                  Execute="deferred" 
+                  Impersonate="no" 
+                  Return="check" />
+
+    <InstallExecuteSequence>
+      <Custom Action="InstallBitnamiRedmine" After="InstallFiles">NOT Installed</Custom>
+      <Custom Action="ConfigureExcelFeatures" After="InstallBitnamiRedmine">NOT Installed</Custom>
+    </InstallExecuteSequence>
+
+    <!-- Major Upgrade Configuration -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Enhanced Redmine is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Icon Definition -->
+    <Icon Id="RedmineIcon" SourceFile="$(var.SourceDir)\assets\redmine-icon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="RedmineIcon" />
+
+    <!-- System Requirements -->
+    <Condition Message="This application requires Windows 10 or higher.">
+      <![CDATA[Installed OR VersionNT >= 1000]]>
+    </Condition>
+    
+    <Condition Message="This application requires .NET Framework 4.8 or higher.">
+      <![CDATA[Installed OR NETFRAMEWORK48]]>
+    </Condition>
+
+    <!-- License Agreement -->
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.SourceDir)\LICENSE.rtf" />
+
+  </Product>
+</Wix>

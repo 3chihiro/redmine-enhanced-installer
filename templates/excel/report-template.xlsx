@@ -1,0 +1,464 @@
+# Enhanced Redmine Advanced Report Template
+# Comprehensive reporting template with multiple dashboards and analytics
+
+template_info:
+  name: "Enhanced Advanced Report Template"
+  version: "1.0.0"
+  author: "Enhanced Redmine Team"
+  description: "Multi-purpose reporting template with executive dashboards and detailed analytics"
+
+worksheets:
+  - name: "Executive Dashboard"
+    type: "dashboard"
+    content:
+      - type: "title_section"
+        position: "A1:P3"
+        title: "Project Management Executive Dashboard"
+        subtitle: "Real-time project performance overview"
+        
+      - type: "kpi_section"
+        position: "A5:P10"
+        kpis:
+          - title: "Projects On Track"
+            value_formula: "=COUNTIF(ProjectStatus,'Green')/COUNTA(ProjectStatus)"
+            format: "percentage"
+            target: ">= 80%"
+            
+          - title: "Budget Utilization"
+            value_formula: "=SUM(ActualCost)/SUM(BudgetAmount)"
+            format: "percentage"
+            target: "<= 90%"
+            
+          - title: "Resource Utilization"
+            value_formula: "=SUM(ActualHours)/SUM(PlannedHours)"
+            format: "percentage"
+            target: "85-95%"
+            
+          - title: "Issues Resolution Rate"
+            value_formula: "=COUNTIF(IssueStatus,'Resolved')/COUNTA(IssueStatus)"
+            format: "percentage"
+            target: ">= 90%"
+            
+      - type: "chart"
+        title: "Project Portfolio Status"
+        position: "A12:H25"
+        chart_type: "donut"
+        data_source: "project_status_summary"
+        
+      - type: "chart"
+        title: "Budget vs Actual Spending"
+        position: "J12:P25"
+        chart_type: "column_clustered"
+        series:
+          - "Budget"
+          - "Actual"
+          - "Forecast"
+          
+      - type: "table"
+        title: "Critical Projects"
+        position: "A27:H35"
+        columns:
+          - "Project Name"
+          - "Status"
+          - "Progress %"
+          - "Budget Variance"
+          - "Schedule Variance"
+          - "Risk Level"
+          - "Action Required"
+        filter_condition: "status = 'Red' OR risk_level = 'High'"
+        
+      - type: "chart"
+        title: "Resource Allocation Trend"
+        position: "J27:P35"
+        chart_type: "area"
+        time_series: true
+
+  - name: "Project Portfolio"
+    headers:
+      - column: A
+        title: "Project ID"
+        width: 12
+        format: "text"
+        
+      - column: B
+        title: "Project Name"
+        width: 30
+        format: "text"
+        
+      - column: C
+        title: "Project Manager"
+        width: 20
+        format: "text"
+        
+      - column: D
+        title: "Start Date"
+        width: 12
+        format: "date"
+        
+      - column: E
+        title: "End Date"
+        width: 12
+        format: "date"
+        
+      - column: F
+        title: "Status"
+        width: 15
+        format: "text"
+        dropdown:
+          - "Not Started"
+          - "In Progress"
+          - "On Hold"
+          - "Completed"
+          - "Cancelled"
+          
+      - column: G
+        title: "Health Status"
+        width: 15
+        format: "text"
+        dropdown:
+          - "Green"
+          - "Yellow"
+          - "Red"
+          
+      - column: H
+        title: "Progress %"
+        width: 12
+        format: "percentage"
+        
+      - column: I
+        title: "Budget ($)"
+        width: 15
+        format: "currency"
+        
+      - column: J
+        title: "Actual Cost ($)"
+        width: 15
+        format: "currency"
+        
+      - column: K
+        title: "Budget Variance"
+        width: 15
+        format: "currency"
+        formula: "=J{row}-I{row}"
+        
+      - column: L
+        title: "Budget Variance %"
+        width: 18
+        format: "percentage"
+        formula: "=K{row}/I{row}"
+        
+      - column: M
+        title: "Planned Hours"
+        width: 15
+        format: "number"
+        
+      - column: N
+        title: "Actual Hours"
+        width: 15
+        format: "number"
+        
+      - column: O
+        title: "Resource Count"
+        width: 15
+        format: "number"
+        
+      - column: P
+        title: "Risk Level"
+        width: 15
+        format: "text"
+        dropdown:
+          - "Low"
+          - "Medium"
+          - "High"
+          - "Critical"
+
+  - name: "Issues Analysis"
+    content:
+      - type: "summary_section"
+        position: "A1:P8"
+        metrics:
+          - title: "Total Issues"
+            formula: "=COUNTA(IssueID)"
+          - title: "Open Issues"
+            formula: "=COUNTIF(Status,'Open')+COUNTIF(Status,'In Progress')"
+          - title: "Resolved Issues"
+            formula: "=COUNTIF(Status,'Resolved')+COUNTIF(Status,'Closed')"
+          - title: "Overdue Issues"
+            formula: "=COUNTIF(DueDate,'<'&TODAY())"
+          - title: "High Priority Issues"
+            formula: "=COUNTIF(Priority,'High')+COUNTIF(Priority,'Immediate')"
+          - title: "Average Resolution Time"
+            formula: "=AVERAGE(ResolutionTime)"
+            format: "days"
+            
+      - type: "chart"
+        title: "Issues by Status"
+        position: "A10:H22"
+        chart_type: "pie"
+        
+      - type: "chart"
+        title: "Issues by Priority"
+        position: "J10:P22"
+        chart_type: "column"
+        
+      - type: "chart"
+        title: "Issues Trend (Last 12 Months)"
+        position: "A24:P35"
+        chart_type: "line"
+        series:
+          - "Created"
+          - "Resolved"
+          - "Backlog"
+
+    detailed_table:
+      position: "A37:P100"
+      headers:
+        - "Issue ID"
+        - "Project"
+        - "Subject" 
+        - "Status"
+        - "Priority"
+        - "Assigned To"
+        - "Reporter"
+        - "Created Date"
+        - "Due Date"
+        - "Resolved Date"
+        - "Resolution Time"
+        - "Category"
+        - "Severity"
+        - "Progress %"
+        - "Estimated Hours"
+        - "Actual Hours"
+
+  - name: "Time Tracking"
+    content:
+      - type: "time_summary"
+        position: "A1:P10"
+        sections:
+          - title: "Team Performance"
+            metrics:
+              - "Total Hours Logged"
+              - "Billable Hours"
+              - "Efficiency Rate"
+              - "Overtime Hours"
+              
+          - title: "Project Time"
+            metrics:
+              - "Planned vs Actual"
+              - "Time Variance"
+              - "Remaining Estimate"
+              - "Completion Forecast"
+              
+      - type: "chart"
+        title: "Time Distribution by Project"
+        position: "A12:H25"
+        chart_type: "bar"
+        
+      - type: "chart"
+        title: "Team Utilization"
+        position: "J12:P25"
+        chart_type: "column"
+        
+      - type: "detailed_timesheet"
+        position: "A27:P50"
+        columns:
+          - "Date"
+          - "User"
+          - "Project"
+          - "Issue"
+          - "Activity"
+          - "Hours"
+          - "Billable"
+          - "Comments"
+
+  - name: "Performance Metrics"
+    dashboard_sections:
+      - title: "Delivery Performance"
+        position: "A1:H15"
+        charts:
+          - type: "gauge"
+            title: "On-Time Delivery Rate"
+            target: 90
+          - type: "trend"
+            title: "Delivery Trend"
+            periods: 12
+            
+      - title: "Quality Metrics"
+        position: "J1:P15"
+        charts:
+          - type: "gauge"
+            title: "Defect Rate"
+            target: 5
+            inverse: true
+          - type: "bar"
+            title: "Quality by Category"
+            
+      - title: "Team Productivity"
+        position: "A17:H30"
+        metrics:
+          - "Story Points Delivered"
+          - "Velocity Trend"
+          - "Team Efficiency"
+          - "Code Quality Score"
+          
+      - title: "Customer Satisfaction"
+        position: "J17:P30"
+        metrics:
+          - "CSAT Score"
+          - "NPS Score"
+          - "Issue Resolution Satisfaction"
+          - "Support Response Time"
+
+  - name: "Financial Summary"
+    content:
+      - type: "financial_dashboard"
+        position: "A1:P20"
+        sections:
+          - title: "Budget Overview"
+            charts:
+              - "Budget vs Actual"
+              - "Spend Rate"
+              - "Forecast vs Plan"
+              
+          - title: "Cost Analysis"
+            charts:
+              - "Cost by Category"
+              - "Cost Trend"
+              - "ROI Analysis"
+              
+      - type: "financial_table"
+        position: "A22:P40"
+        columns:
+          - "Project"
+          - "Budget"
+          - "Spent"
+          - "Remaining"
+          - "Variance"
+          - "Variance %"
+          - "ROI"
+          - "NPV"
+          - "Payback Period"
+
+  - name: "Risk Management"
+    content:
+      - type: "risk_dashboard"
+        position: "A1:P15"
+        sections:
+          - title: "Risk Overview"
+            metrics:
+              - "Total Risks"
+              - "High Risks"
+              - "Mitigation Rate"
+              - "Risk Score"
+              
+      - type: "risk_matrix"
+        position: "A17:H30"
+        chart_type: "scatter"
+        x_axis: "Probability"
+        y_axis: "Impact"
+        
+      - type: "risk_register"
+        position: "A32:P50"
+        columns:
+          - "Risk ID"
+          - "Risk Description"
+          - "Category"
+          - "Probability"
+          - "Impact"
+          - "Risk Score"
+          - "Mitigation Plan"
+          - "Owner"
+          - "Status"
+          - "Due Date"
+
+formatting:
+  color_scheme:
+    primary: "2E75B6"
+    secondary: "4BACC6" 
+    success: "70AD47"
+    warning: "FFC000"
+    danger: "E74C3C"
+    
+  header_styles:
+    background_color: "2E75B6"
+    font_color: "FFFFFF"
+    font_bold: true
+    font_size: 12
+    
+  data_styles:
+    font_size: 10
+    zebra_striping: true
+    
+  kpi_styles:
+    good:
+      background_color: "E2EFDA"
+      font_color: "70AD47"
+    warning:
+      background_color: "FFF2CC"
+      font_color: "BF8F00"
+    critical:
+      background_color: "FFEBEE"
+      font_color: "E74C3C"
+
+conditional_formatting:
+  project_health:
+    - condition: "Green"
+      background_color: "E2EFDA"
+    - condition: "Yellow"  
+      background_color: "FFF2CC"
+    - condition: "Red"
+      background_color: "FFEBEE"
+      
+  budget_variance:
+    - condition: "> 10%"
+      background_color: "FFEBEE"
+    - condition: "> 5%"
+      background_color: "FFF2CC"
+    - condition: "<= 5%"
+      background_color: "E2EFDA"
+      
+  issue_priority:
+    - condition: "Immediate"
+      background_color: "FFCDD2"
+      font_bold: true
+    - condition: "High"
+      background_color: "FFECB3"
+    - condition: "Normal"
+      background_color: "FFFFFF"
+    - condition: "Low"
+      background_color: "E8F5E8"
+
+charts:
+  default_colors:
+    - "2E75B6"
+    - "70AD47"
+    - "FFC000"
+    - "E74C3C"
+    - "9F2B68"
+    - "4BACC6"
+    - "F79646"
+    - "9CBB58"
+
+data_validation:
+  status_dropdown:
+    - "Not Started"
+    - "In Progress"
+    - "Completed"
+    - "On Hold"
+    - "Cancelled"
+    
+  health_dropdown:
+    - "Green"
+    - "Yellow"
+    - "Red"
+    
+  priority_dropdown:
+    - "Low"
+    - "Normal"
+    - "High" 
+    - "Immediate"
+    
+  percentage_validation:
+    type: "decimal"
+    minimum: 0
+    maximum: 1
