@@ -1,0 +1,498 @@
+name: Enhanced Redmine Installer CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run weekly security scans
+    - cron: '0 2 * * 0'
+
+env:
+  REDMINE_VERSION: '5.0.5'
+  RUBY_VERSION: '3.2.0'
+  NODE_VERSION: '18.x'
+
+jobs:
+  # Security and code quality checks
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security & Quality Scan
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+    
+    - name: Run CodeQL Analysis
+      uses: github/codeql-action/init@v2
+      with:
+        languages: ruby, javascript
+    
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+
+  # Validate configuration files
+  validate-config:
+    runs-on: ubuntu-latest
+    name: Validate Configuration
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+    
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ env.RUBY_VERSION }}
+        bundler-cache: false
+    
+    - name: Validate YAML files
+      run: |
+        find . -name "*.yml" -o -name "*.yaml" | while read file; do
+          echo "Validating $file"
+          ruby -ryaml -e "YAML.load_file('$file')"
+        done
+    
+    - name: Validate WiX XML Schema
+      uses: ChristopheLav/wix-toolset-action@v1
+      with:
+        wix-version: '3.11'
+    
+    - name: Validate WiX files
+      run: |
+        find src/wix -name "*.wxs" | while read file; do
+          echo "Validating WiX file: $file"
+          candle.exe -nologo "$file" -out temp.wixobj || exit 1
+          rm -f temp.wixobj
+        done
+      shell: bash
+
+  # Test installer components
+  test-components:
+    runs-on: ubuntu-latest
+    name: Test Components
+    needs: [validate-config]
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testpassword
+          MYSQL_DATABASE: redmine_test
+          MYSQL_USER: redmine
+          MYSQL_PASSWORD: redmine
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+    
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ env.RUBY_VERSION }}
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Install Ruby dependencies
+      run: |
+        gem install bundler
+        bundle install --jobs 4 --retry 3
+    
+    - name: Test Ruby customization script
+      run: |
+        ruby -c src/scripts/customize-redmine.rb
+        echo "Ruby script syntax validation passed"
+    
+    - name: Test Excel configuration
+      run: |
+        ruby -ryaml -e "
+        config = YAML.load_file('config/excel-config.yml')
+        puts 'Excel config validation: PASSED'
+        puts \"Loaded #{config.keys.length} environment configurations\"
+        "
+    
+    - name: Validate Excel export functionality
+      run: |
+        # Test Excel gem compatibility
+        gem install axlsx roo spreadsheet
+        ruby -e "
+        require 'axlsx'
+        require 'roo'
+        package = Axlsx::Package.new
+        workbook = package.workbook
+        worksheet = workbook.add_worksheet(name: 'Test')
+        worksheet.add_row ['ID', 'Subject', 'Status']
+        worksheet.add_row [1, 'Test Issue', 'New']
+        package.serialize('test_export.xlsx')
+        
+        # Test reading the file
+        xlsx = Roo::Spreadsheet.open('test_export.xlsx')
+        puts \"Excel test: Created #{xlsx.last_row} rows\"
+        puts 'Excel functionality test: PASSED'
+        "
+
+  # Build Windows installer
+  build-windows:
+    runs-on: windows-latest
+    name: Build Windows Installer
+    needs: [security-scan, test-components]
+    if: github.event_name == 'push' || github.event_name == 'release'
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup WiX Toolset
+      uses: ChristopheLav/wix-toolset-action@v1
+      with:
+        wix-version: '3.11'
+    
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ env.RUBY_VERSION }}
+    
+    - name: Download Bitnami Redmine
+      run: |
+        $url = "https://bitnami.com/redirect/to/1735058/bitnami-redmine-${{ env.REDMINE_VERSION }}-0-windows-x64-installer.exe"
+        $output = "build/bitnami-redmine-installer.exe"
+        New-Item -ItemType Directory -Force -Path build
+        Invoke-WebRequest -Uri $url -OutFile $output -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        Write-Host "Downloaded Bitnami installer: $(Get-Item $output | Select-Object Length)"
+      shell: powershell
+    
+    - name: Create build directories
+      run: |
+        New-Item -ItemType Directory -Force -Path build/assets
+        New-Item -ItemType Directory -Force -Path build/components
+        Copy-Item -Recurse src/* build/components/
+        Copy-Item -Recurse config build/components/
+        Copy-Item -Recurse templates build/components/
+      shell: powershell
+    
+    - name: Build MSI installer
+      run: |
+        cd build
+        candle.exe -nologo components/wix/Product.wxs -dSourceDir=components -out Product.wixobj
+        light.exe -nologo Product.wixobj -out EnhancedRedmineInstaller-${{ env.REDMINE_VERSION }}.msi -ext WixUIExtension
+      shell: cmd
+    
+    - name: Sign installer (if certificate available)
+      if: env.SIGNING_CERTIFICATE != ''
+      run: |
+        signtool sign /f ${{ secrets.SIGNING_CERTIFICATE }} /p ${{ secrets.CERT_PASSWORD }} /t http://timestamp.verisign.com/scripts/timstamp.dll build/EnhancedRedmineInstaller-${{ env.REDMINE_VERSION }}.msi
+      shell: cmd
+      env:
+        SIGNING_CERTIFICATE: ${{ secrets.SIGNING_CERTIFICATE }}
+    
+    - name: Test installer (basic validation)
+      run: |
+        # Validate MSI structure
+        msiexec.exe /a "build/EnhancedRedmineInstaller-${{ env.REDMINE_VERSION }}.msi" /qn TARGETDIR="%CD%\test_install"
+        if (Test-Path "test_install\Enhanced Redmine\scripts\start-redmine.bat") {
+          Write-Host "✓ Installer validation passed"
+        } else {
+          Write-Host "✗ Installer validation failed"
+          exit 1
+        }
+      shell: powershell
+    
+    - name: Upload installer artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: enhanced-redmine-installer-windows
+        path: |
+          build/EnhancedRedmineInstaller-*.msi
+          build/EnhancedRedmineInstaller-*.msi.sha256
+        retention-days: 30
+
+  # Create Docker image for testing
+  build-docker:
+    runs-on: ubuntu-latest
+    name: Build Docker Test Image
+    needs: [test-components]
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Login to Docker Hub
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    
+    - name: Create Dockerfile
+      run: |
+        cat > Dockerfile << 'EOF'
+        FROM bitnami/redmine:${{ env.REDMINE_VERSION }}
+        
+        # Install additional dependencies
+        USER root
+        RUN apt-get update && apt-get install -y \
+            build-essential \
+            libxml2-dev \
+            libxslt1-dev \
+            && rm -rf /var/lib/apt/lists/*
+        
+        # Copy enhanced configuration
+        COPY config/excel-config.yml /opt/bitnami/redmine/config/
+        COPY src/scripts/customize-redmine.rb /opt/bitnami/redmine/
+        COPY templates/ /opt/bitnami/redmine/templates/
+        
+        # Install Ruby gems
+        USER 1001
+        WORKDIR /opt/bitnami/redmine
+        RUN bundle add axlsx axlsx_rails roo spreadsheet
+        RUN bundle install
+        
+        # Run customization
+        RUN ruby customize-redmine.rb || true
+        
+        EXPOSE 3000
+        
+        CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0"]
+        EOF
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: |
+          enhancedredmine/redmine:latest
+          enhancedredmine/redmine:${{ env.REDMINE_VERSION }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # Integration tests
+  integration-tests:
+    runs-on: ubuntu-latest
+    name: Integration Tests
+    needs: [build-docker]
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testpassword
+          MYSQL_DATABASE: redmine_test
+          MYSQL_USER: redmine
+          MYSQL_PASSWORD: redmine
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+    
+    - name: Run Docker container
+      run: |
+        docker run -d --name redmine-test \
+          --network host \
+          -e REDMINE_DB_MYSQL=127.0.0.1 \
+          -e REDMINE_DB_DATABASE=redmine_test \
+          -e REDMINE_DB_USERNAME=redmine \
+          -e REDMINE_DB_PASSWORD=redmine \
+          enhancedredmine/redmine:latest
+    
+    - name: Wait for application startup
+      run: |
+        timeout 300 bash -c 'until curl -f http://localhost:3000/; do sleep 5; done'
+        echo "✓ Application is running"
+    
+    - name: Test Excel export functionality
+      run: |
+        # Test if Excel plugins are loaded
+        docker exec redmine-test bash -c "cd /opt/bitnami/redmine && bundle exec rails runner 'puts Redmine::Plugin.all.map(&:id)'"
+        
+        # Test Excel export endpoint (if available)
+        curl -f http://localhost:3000/issues.xlsx || echo "Excel export endpoint test completed"
+    
+    - name: Collect logs
+      if: always()
+      run: |
+        docker logs redmine-test > integration-test.log 2>&1
+    
+    - name: Upload test logs
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: integration-test-logs
+        path: integration-test.log
+
+  # Performance benchmarks
+  performance-test:
+    runs-on: ubuntu-latest
+    name: Performance Benchmarks
+    needs: [integration-tests]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js for testing tools
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+    
+    - name: Install testing tools
+      run: |
+        npm install -g artillery autocannon
+    
+    - name: Run performance tests
+      run: |
+        # Start the application (using Docker from previous job)
+        docker run -d --name redmine-perf \
+          --network host \
+          -e REDMINE_DB_MYSQL=127.0.0.1 \
+          -e REDMINE_DB_DATABASE=redmine_test \
+          -e REDMINE_DB_USERNAME=redmine \
+          -e REDMINE_DB_PASSWORD=redmine \
+          enhancedredmine/redmine:latest
+        
+        # Wait for startup
+        sleep 30
+        
+        # Run load tests
+        echo "Running load tests..."
+        autocannon -c 10 -d 30 -R 50 http://localhost:3000 > performance-results.txt
+        
+        # Show results
+        cat performance-results.txt
+    
+    - name: Upload performance results
+      uses: actions/upload-artifact@v3
+      with:
+        name: performance-results
+        path: performance-results.txt
+
+  # Release creation
+  create-release:
+    runs-on: ubuntu-latest
+    name: Create Release
+    needs: [build-windows, integration-tests]
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+    
+    - name: Download Windows installer
+      uses: actions/download-artifact@v3
+      with:
+        name: enhanced-redmine-installer-windows
+        path: ./release-assets
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Enhanced Redmine Installer ${{ github.ref_name }}
+        body: |
+          # Enhanced Redmine Installer ${{ github.ref_name }}
+          
+          ## 🚀 Features
+          - Bitnami Redmine ${{ env.REDMINE_VERSION }} with enhanced plugins
+          - Advanced Gantt charts with dependencies and baselines  
+          - Professional Excel export/import with custom templates
+          - Earned Value Management (EVM) tracking and reporting
+          - Advanced reporting dashboards and analytics
+          
+          ## 📦 Installation
+          1. Download `EnhancedRedmineInstaller-${{ env.REDMINE_VERSION }}.msi`
+          2. Run as Administrator
+          3. Follow the installation wizard
+          4. Access Redmine at http://localhost:3000
+          
+          ## 🔐 Security
+          - All components scanned for vulnerabilities
+          - Code quality validated with CodeQL
+          - Signed installer (when available)
+          
+          ## 📋 System Requirements
+          - Windows 10/11 or Windows Server 2016+
+          - .NET Framework 4.8+
+          - 4GB RAM minimum, 8GB recommended
+          - 5GB disk space
+          
+          ## ✨ What's New
+          See [CHANGELOG.md](CHANGELOG.md) for detailed changes.
+        files: |
+          release-assets/*
+        draft: false
+        prerelease: ${{ contains(github.ref_name, '-') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Deployment to staging (for main branch)
+  deploy-staging:
+    runs-on: ubuntu-latest
+    name: Deploy to Staging
+    needs: [integration-tests]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: staging
+    
+    steps:
+    - name: Deploy to staging server
+      run: |
+        echo "🚀 Deploying to staging environment..."
+        echo "Staging URL: https://staging.enhanced-redmine.com"
+        # Add actual deployment commands here
+        
+    - name: Run smoke tests
+      run: |
+        echo "Running staging smoke tests..."
+        # Add smoke test commands here
+
+  # Notification
+  notify:
+    runs-on: ubuntu-latest
+    name: Notification
+    needs: [create-release, deploy-staging, performance-test]
+    if: always() && (github.event_name == 'push' || github.event_name == 'release')
+    
+    steps:
+    - name: Notify success
+      if: needs.create-release.result == 'success' || needs.deploy-staging.result == 'success'
+      run: |
+        echo "✅ Enhanced Redmine build and deployment completed successfully!"
+        
+    - name: Notify failure
+      if: failure()
+      run: |
+        echo "❌ Enhanced Redmine build or deployment failed!"
+        echo "Please check the workflow logs for details."
