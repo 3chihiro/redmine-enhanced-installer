@@ -13,7 +13,6 @@ on:
 env:
   REDMINE_VERSION: '5.0.5'
   RUBY_VERSION: '3.2.0'
-  NODE_VERSION: '18.x'
 
 # Set default permissions
 permissions:
@@ -53,7 +52,7 @@ jobs:
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
-        languages: ruby, javascript
+        languages: ruby
         config: |
           name: "Enhanced Redmine Analysis"
           disable-default-path-filters: false
@@ -61,7 +60,7 @@ jobs:
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
       with:
-        category: "/language:ruby,javascript"
+        category: "/language:ruby"
 
   # Validate configuration files
   validate-config:
