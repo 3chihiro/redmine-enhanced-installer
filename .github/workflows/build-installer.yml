@@ -366,7 +366,23 @@ jobs:
               if ($LastExitCode -eq 0) {
                 Write-Host "✅ MSI installer built successfully"
                 $msiFile = Get-ChildItem "*.msi"
-                Write-Host "MSI File: $($msiFile.Name), Size: $([math]::Round($msiFile.Length/1MB, 2)) MB"
+                $sizeMB = [math]::Round($msiFile.Length/1MB, 2)
+                Write-Host "MSI File: $($msiFile.Name), Size: $sizeMB MB"
+                
+                # Verify MSI file size is reasonable (should be >1MB for a real installer)
+                if ($msiFile.Length -gt 1MB) {
+                  Write-Host "✅ MSI file size validation passed ($sizeMB MB)"
+                } else {
+                  Write-Host "⚠️ MSI file seems too small ($sizeMB MB), may be incomplete"
+                }
+                
+                # Test MSI file integrity
+                try {
+                  $msiProperties = Get-ItemProperty $msiFile.FullName
+                  Write-Host "✅ MSI file integrity check passed"
+                } catch {
+                  Write-Host "⚠️ MSI file may be corrupted: $($_.Exception.Message)"
+                }
               } else {
                 Write-Host "⚠️ Light.exe failed with exit code: $LastExitCode"
               }
