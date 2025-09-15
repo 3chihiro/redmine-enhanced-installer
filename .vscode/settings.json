@@ -313,7 +313,8 @@
     "DOCKERHUB",
     "enhancedredmine",
     "autocannon",
-    "softprops"
+    "softprops",
+    "LastExitCode"
   ],
   "cSpell.enableFiletypes": [
     "bat",
