@@ -295,8 +295,22 @@ jobs:
         Copy-Item -Recurse templates build/templates
         Copy-Item LICENSE.rtf build/
         Write-Host "✅ Build directory structure created"
-        Write-Host "Directory structure:"
-        Get-ChildItem -Recurse build | Select-Object FullName | Format-Table -AutoSize
+        Write-Host "Verifying critical files:"
+        $criticalFiles = @(
+          "build/src/assets/redmine-icon.ico",
+          "build/src/wix/Product.wxs", 
+          "build/LICENSE.rtf",
+          "build/templates/gantt-template.xlsx"
+        )
+        foreach ($file in $criticalFiles) {
+          if (Test-Path $file) {
+            $size = (Get-Item $file).Length
+            Write-Host "✅ $file ($size bytes)"
+          } else {
+            Write-Host "❌ MISSING: $file"
+            exit 1
+          }
+        }
       shell: powershell
     
     - name: Validate WiX source files
@@ -346,7 +360,7 @@ jobs:
             }
             
             Write-Host "`nBuilding MSI..."
-            candle.exe -nologo src/wix/Product.wxs -dSourceDir=. -out Product.wixobj -v
+            candle.exe -nologo src/wix/Product.wxs -dSourceDir=. -out Product.wixobj -v -sw1150
             if ($LastExitCode -eq 0) {
               light.exe -nologo Product.wixobj -out "EnhancedRedmineInstaller-${{ env.REDMINE_VERSION }}.msi" -ext WixUIExtension -v
               if ($LastExitCode -eq 0) {
