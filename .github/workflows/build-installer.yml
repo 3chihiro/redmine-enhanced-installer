@@ -339,44 +339,66 @@ jobs:
         Write-Host "Build directory exists: $(Test-Path 'build')"
         
         try {
+          # Use robocopy for more reliable directory copying on Windows
+          Write-Host "Using robocopy for reliable file copying..."
+          
           Write-Host "Copying src directory..."
           if (Test-Path "src") {
-            Copy-Item -Recurse -Force "src" "build/" -ErrorAction Stop
-            Write-Host "✅ src directory copied"
+            $result = robocopy "src" "build\src" /E /NFL /NDL /NJH /NJS /nc /ns /np
+            if ($LASTEXITCODE -le 1) { # robocopy success codes are 0 or 1
+              Write-Host "✅ src directory copied successfully"
+            } else {
+              throw "robocopy failed for src directory with exit code $LASTEXITCODE"
+            }
           } else {
             throw "Source 'src' directory not found"
           }
           
           Write-Host "Copying config directory..."
           if (Test-Path "config") {
-            Copy-Item -Recurse -Force "config" "build/" -ErrorAction Stop
-            Write-Host "✅ config directory copied"
+            $result = robocopy "config" "build\config" /E /NFL /NDL /NJH /NJS /nc /ns /np
+            if ($LASTEXITCODE -le 1) {
+              Write-Host "✅ config directory copied successfully"
+            } else {
+              throw "robocopy failed for config directory with exit code $LASTEXITCODE"
+            }
           } else {
             throw "Source 'config' directory not found"
           }
           
           Write-Host "Copying templates directory..."
           if (Test-Path "templates") {
-            Copy-Item -Recurse -Force "templates" "build/" -ErrorAction Stop
-            Write-Host "✅ templates directory copied"
+            $result = robocopy "templates" "build\templates" /E /NFL /NDL /NJH /NJS /nc /ns /np
+            if ($LASTEXITCODE -le 1) {
+              Write-Host "✅ templates directory copied successfully"
+            } else {
+              throw "robocopy failed for templates directory with exit code $LASTEXITCODE"
+            }
           } else {
             throw "Source 'templates' directory not found"
           }
           
           Write-Host "Copying LICENSE.rtf..."
           if (Test-Path "LICENSE.rtf") {
-            Copy-Item -Force "LICENSE.rtf" "build/" -ErrorAction Stop
-            Write-Host "✅ LICENSE.rtf copied"
+            Copy-Item "LICENSE.rtf" "build\LICENSE.rtf" -Force -ErrorAction Stop
+            Write-Host "✅ LICENSE.rtf copied successfully"
           } else {
             throw "LICENSE.rtf file not found"
           }
           
-          Write-Host "✅ All files copied successfully"
+          Write-Host "✅ All files copied successfully using robocopy"
         } catch {
           Write-Host "❌ File copy failed: $($_.Exception.Message)"
           Write-Host "❌ Error details: $($_.Exception.GetType().Name)"
+          Write-Host "❌ Last exit code: $LASTEXITCODE"
           Write-Host "❌ Current directory contents:"
           Get-ChildItem -Force | ForEach-Object { Write-Host "  $($_.Name) ($($_.Mode))" }
+          Write-Host "❌ Build directory contents:"
+          if (Test-Path "build") {
+            Get-ChildItem "build" -Recurse -Force | ForEach-Object { Write-Host "  $($_.FullName)" }
+          } else {
+            Write-Host "  Build directory does not exist"
+          }
           exit 1
         }
         
