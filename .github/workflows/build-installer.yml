@@ -319,13 +319,36 @@ jobs:
           if (Get-Command candle.exe -ErrorAction SilentlyContinue) {
             Write-Host "Building with WiX Toolset..."
             Write-Host "Current directory: $(Get-Location)"
-            Write-Host "Available files:"
-            Get-ChildItem -Recurse | Where-Object {$_.Name -match '\.(wxs|bat|rb|yml|xlsx|ico|rtf)$'} | Select-Object FullName
+            Write-Host "Checking required files exist:"
             
-            # Build with proper SourceDir parameter
-            candle.exe -nologo src/wix/Product.wxs -dSourceDir=../ -out Product.wixobj
+            $requiredFiles = @(
+              "src\wix\Product.wxs",
+              "src\assets\redmine-icon.ico", 
+              "src\scripts\start-redmine.bat",
+              "src\scripts\install-plugins.bat",
+              "src\scripts\configure-excel.bat",
+              "src\scripts\customize-redmine.rb",
+              "config\excel-config.yml",
+              "templates\gantt-template.xlsx",
+              "templates\excel\evm-template.xlsx",
+              "templates\excel\report-template.xlsx", 
+              "templates\excel\issue-export-template.xlsx",
+              "LICENSE.rtf"
+            )
+            
+            foreach ($file in $requiredFiles) {
+              if (Test-Path $file) {
+                $size = (Get-Item $file).Length
+                Write-Host "✅ $file ($size bytes)"
+              } else {
+                Write-Host "❌ MISSING: $file"
+              }
+            }
+            
+            Write-Host "`nBuilding MSI..."
+            candle.exe -nologo src/wix/Product.wxs -dSourceDir=. -out Product.wixobj -v
             if ($LastExitCode -eq 0) {
-              light.exe -nologo Product.wixobj -out "EnhancedRedmineInstaller-${{ env.REDMINE_VERSION }}.msi" -ext WixUIExtension
+              light.exe -nologo Product.wixobj -out "EnhancedRedmineInstaller-${{ env.REDMINE_VERSION }}.msi" -ext WixUIExtension -v
               if ($LastExitCode -eq 0) {
                 Write-Host "✅ MSI installer built successfully"
                 $msiFile = Get-ChildItem "*.msi"

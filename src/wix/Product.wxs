@@ -219,7 +219,7 @@
     <MediaTemplate EmbedCab="yes" />
 
     <!-- Icon Definition -->
-    <Icon Id="RedmineIcon" SourceFile="$(var.SourceDir)\assets\redmine-icon.ico" />
+    <Icon Id="RedmineIcon" SourceFile="$(var.SourceDir)\src\assets\redmine-icon.ico" />
     <Property Id="ARPPRODUCTICON" Value="RedmineIcon" />
 
     <!-- System Requirements -->
