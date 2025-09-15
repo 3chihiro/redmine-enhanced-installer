@@ -399,79 +399,172 @@ jobs:
       run: |
         try {
           cd build
-          if (Get-Command candle.exe -ErrorAction SilentlyContinue) {
-            Write-Host "Building with WiX Toolset..."
-            Write-Host "Current directory: $(Get-Location)"
-            Write-Host "Checking required files exist:"
-            
-            $requiredFiles = @(
-              "src\wix\Product.wxs",
-              "src\assets\redmine-icon.ico", 
-              "src\scripts\start-redmine.bat",
-              "src\scripts\install-plugins.bat",
-              "src\scripts\configure-excel.bat",
-              "src\scripts\customize-redmine.rb",
-              "config\excel-config.yml",
-              "templates\gantt-template.xlsx",
-              "templates\excel\evm-template.xlsx",
-              "templates\excel\report-template.xlsx", 
-              "templates\excel\issue-export-template.xlsx",
-              "LICENSE.rtf"
-            )
-            
-            foreach ($file in $requiredFiles) {
-              if (Test-Path $file) {
-                $size = (Get-Item $file).Length
-                Write-Host "✅ $file ($size bytes)"
-              } else {
-                Write-Host "❌ MISSING: $file"
-              }
+          Write-Host "🏗️ Starting Enhanced Redmine MSI Build Process..."
+          Write-Host "Current working directory: $(Get-Location)"
+          Write-Host "PowerShell version: $($PSVersionTable.PSVersion)"
+          Write-Host "Available disk space: $([math]::Round((Get-WmiObject -Class Win32_LogicalDisk -Filter "DeviceID='C:'").FreeSpace/1GB, 2)) GB"
+          
+          # Comprehensive file validation
+          Write-Host "`n📋 COMPREHENSIVE FILE VALIDATION:"
+          $requiredFiles = @(
+            "src\wix\Product.wxs",
+            "src\assets\redmine-icon.ico", 
+            "src\scripts\start-redmine.bat",
+            "src\scripts\install-plugins.bat",
+            "src\scripts\configure-excel.bat",
+            "src\scripts\customize-redmine.rb",
+            "config\excel-config.yml",
+            "templates\gantt-template.xlsx",
+            "templates\excel\gantt-template.xlsx",
+            "templates\excel\evm-template.xlsx",
+            "templates\excel\report-template.xlsx", 
+            "templates\excel\issue-export-template.xlsx",
+            "LICENSE.rtf"
+          )
+          
+          $missingFiles = @()
+          $totalSize = 0
+          foreach ($file in $requiredFiles) {
+            if (Test-Path $file) {
+              $size = (Get-Item $file).Length
+              $totalSize += $size
+              Write-Host "✅ $file ($size bytes)"
+            } else {
+              Write-Host "❌ MISSING: $file"
+              $missingFiles += $file
             }
-            
-            Write-Host "`n🔥 Building MSI with WiX Toolset..."
-            Write-Host "Current working directory: $(Get-Location)"
-            Write-Host "Running: candle.exe -nologo src/wix/Product.wxs -dSourceDir=. -out Product.wixobj"
-            
-            candle.exe -nologo src/wix/Product.wxs -dSourceDir=. -out Product.wixobj -v -sw1150
-            $candleExitCode = $LastExitCode
-            Write-Host "Candle.exe exit code: $candleExitCode"
-            
-            if ($candleExitCode -eq 0) {
-              light.exe -nologo Product.wixobj -out "EnhancedRedmineInstaller-${{ env.REDMINE_VERSION }}.msi" -ext WixUIExtension -v
-              if ($LastExitCode -eq 0) {
-                Write-Host "✅ MSI installer built successfully"
-                $msiFile = Get-ChildItem "*.msi"
-                $sizeMB = [math]::Round($msiFile.Length/1MB, 2)
-                Write-Host "MSI File: $($msiFile.Name), Size: $sizeMB MB"
-                
-                # Verify MSI file size is reasonable (should be >1MB for a real installer)
-                if ($msiFile.Length -gt 1MB) {
-                  Write-Host "✅ MSI file size validation passed ($sizeMB MB)"
-                } else {
-                  Write-Host "⚠️ MSI file seems too small ($sizeMB MB), may be incomplete"
+          }
+          
+          Write-Host "📊 Total files checked: $($requiredFiles.Count)"
+          Write-Host "📊 Missing files: $($missingFiles.Count)"
+          Write-Host "📊 Total file size: $([math]::Round($totalSize/1MB, 2)) MB"
+          
+          if ($missingFiles.Count -gt 0) {
+            Write-Host "🚨 CRITICAL: Cannot proceed with missing files:"
+            foreach ($file in $missingFiles) { Write-Host "  ❌ $file" }
+            throw "Missing required files for MSI build"
+          }
+          
+          # WiX toolset validation
+          Write-Host "`n🔧 WiX TOOLSET VALIDATION:"
+          if (Get-Command candle.exe -ErrorAction SilentlyContinue) {
+            $candleVersion = & candle.exe -? 2>&1 | Select-String -Pattern "version" | Select-Object -First 1
+            Write-Host "✅ candle.exe found: $candleVersion"
+          } else {
+            throw "candle.exe not found in PATH"
+          }
+          
+          if (Get-Command light.exe -ErrorAction SilentlyContinue) {
+            $lightVersion = & light.exe -? 2>&1 | Select-String -Pattern "version" | Select-Object -First 1
+            Write-Host "✅ light.exe found: $lightVersion"
+          } else {
+            throw "light.exe not found in PATH"
+          }
+          
+          # WiX source validation
+          Write-Host "`n🔍 WiX SOURCE VALIDATION:"
+          $wxsContent = Get-Content "src\wix\Product.wxs" -Raw
+          if ($wxsContent -match '<?xml.*?>') {
+            Write-Host "✅ Product.wxs is valid XML format"
+          } else {
+            throw "Product.wxs is not valid XML"
+          }
+          
+          if ($wxsContent -match 'SourceFile=.*redmine-icon.ico') {
+            Write-Host "✅ ICO file reference found in WiX"
+          } else {
+            Write-Host "⚠️ ICO file reference not found in WiX"
+          }
+          
+          # Build execution
+          Write-Host "`n🔥 EXECUTING WiX BUILD:"
+          Write-Host "Command: candle.exe -nologo src\wix\Product.wxs -dSourceDir=. -out Product.wixobj -v"
+          
+          $candleProcess = Start-Process -FilePath "candle.exe" -ArgumentList "-nologo", "src\wix\Product.wxs", "-dSourceDir=.", "-out", "Product.wixobj", "-v" -Wait -PassThru -RedirectStandardOutput "candle-output.txt" -RedirectStandardError "candle-error.txt"
+          
+          Write-Host "Candle.exe exit code: $($candleProcess.ExitCode)"
+          
+          if (Test-Path "candle-output.txt") {
+            Write-Host "📄 Candle Output:"
+            Get-Content "candle-output.txt" | ForEach-Object { Write-Host "  $_" }
+          }
+          
+          if (Test-Path "candle-error.txt") {
+            $errors = Get-Content "candle-error.txt"
+            if ($errors) {
+              Write-Host "❌ Candle Errors:"
+              $errors | ForEach-Object { Write-Host "  $_" }
+            }
+          }
+          
+          if ($candleProcess.ExitCode -eq 0) {
+            if (Test-Path "Product.wixobj") {
+              $wixobjSize = (Get-Item "Product.wixobj").Length
+              Write-Host "✅ Product.wixobj created successfully ($wixobjSize bytes)"
+              
+              Write-Host "`n🔥 EXECUTING LIGHT.EXE:"
+              Write-Host "Command: light.exe -nologo Product.wixobj -out EnhancedRedmineInstaller-${{ env.REDMINE_VERSION }}.msi -ext WixUIExtension"
+              
+              $lightProcess = Start-Process -FilePath "light.exe" -ArgumentList "-nologo", "Product.wixobj", "-out", "EnhancedRedmineInstaller-${{ env.REDMINE_VERSION }}.msi", "-ext", "WixUIExtension" -Wait -PassThru -RedirectStandardOutput "light-output.txt" -RedirectStandardError "light-error.txt"
+              
+              Write-Host "Light.exe exit code: $($lightProcess.ExitCode)"
+              
+              if (Test-Path "light-output.txt") {
+                Write-Host "📄 Light Output:"
+                Get-Content "light-output.txt" | ForEach-Object { Write-Host "  $_" }
+              }
+              
+              if (Test-Path "light-error.txt") {
+                $lightErrors = Get-Content "light-error.txt"
+                if ($lightErrors) {
+                  Write-Host "❌ Light Errors:"
+                  $lightErrors | ForEach-Object { Write-Host "  $_" }
                 }
-                
-                # Test MSI file integrity
-                try {
-                  $msiProperties = Get-ItemProperty $msiFile.FullName
-                  Write-Host "✅ MSI file integrity check passed"
-                } catch {
-                  Write-Host "⚠️ MSI file may be corrupted: $($_.Exception.Message)"
+              }
+              
+              if ($lightProcess.ExitCode -eq 0) {
+                $msiFile = Get-ChildItem "*.msi" -ErrorAction SilentlyContinue
+                if ($msiFile) {
+                  $sizeMB = [math]::Round($msiFile.Length/1MB, 2)
+                  Write-Host "🎉 SUCCESS: MSI installer built successfully!"
+                  Write-Host "📄 MSI File: $($msiFile.Name)"
+                  Write-Host "📊 MSI Size: $sizeMB MB"
+                  Write-Host "🔍 MSI Location: $($msiFile.FullName)"
+                  
+                  if ($msiFile.Length -gt 1MB) {
+                    Write-Host "✅ MSI file size validation PASSED ($sizeMB MB)"
+                  } else {
+                    Write-Host "⚠️ MSI file size WARNING: $sizeMB MB (may be incomplete)"
+                  }
+                } else {
+                  throw "MSI file not found after successful light.exe execution"
                 }
               } else {
-                Write-Host "⚠️ Light.exe failed with exit code: $LastExitCode"
+                throw "light.exe failed with exit code: $($lightProcess.ExitCode)"
               }
             } else {
-              Write-Host "⚠️ Candle.exe failed with exit code: $LastExitCode"
+              throw "Product.wixobj not found after candle.exe execution"
             }
           } else {
-            Write-Host "⚠️ WiX not available, skipping MSI build"
+            throw "candle.exe failed with exit code: $($candleProcess.ExitCode)"
           }
         } catch {
-          Write-Host "⚠️ Build failed: $($_.Exception.Message)"
+          Write-Host "🚨 BUILD FAILED: $($_.Exception.Message)"
+          Write-Host "📋 Error Details: $($_.Exception.GetType().Name)"
+          Write-Host "📍 Error Location: $($_.InvocationInfo.ScriptLineNumber):$($_.InvocationInfo.OffsetInLine)"
+          
+          # Cleanup log files for debugging
+          Get-ChildItem "*.txt" -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host "📄 Log file: $($_.Name)"
+            if ($_.Length -gt 0) {
+              Write-Host "Content preview:"
+              Get-Content $_.FullName | Select-Object -First 10 | ForEach-Object { Write-Host "  $_" }
+            }
+          }
+          
+          exit 1
         }
       shell: powershell
-      continue-on-error: true
     
     - name: Generate build artifacts info
       run: |
