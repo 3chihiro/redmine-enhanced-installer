@@ -333,16 +333,50 @@ jobs:
         
         Write-Host "🎉 All $($criticalFiles.Count) critical files validated successfully!"
         
-        # Copy with enhanced error handling
+        # Copy with enhanced error handling and debugging
         Write-Host "📁 Copying files to build directory..."
+        Write-Host "Current working directory: $(Get-Location)"
+        Write-Host "Build directory exists: $(Test-Path 'build')"
+        
         try {
-          Copy-Item -Recurse -Force src build/src -ErrorAction Stop
-          Copy-Item -Recurse -Force config build/config -ErrorAction Stop
-          Copy-Item -Recurse -Force templates build/templates -ErrorAction Stop
-          Copy-Item -Force LICENSE.rtf build/ -ErrorAction Stop
+          Write-Host "Copying src directory..."
+          if (Test-Path "src") {
+            Copy-Item -Recurse -Force "src" "build/" -ErrorAction Stop
+            Write-Host "✅ src directory copied"
+          } else {
+            throw "Source 'src' directory not found"
+          }
+          
+          Write-Host "Copying config directory..."
+          if (Test-Path "config") {
+            Copy-Item -Recurse -Force "config" "build/" -ErrorAction Stop
+            Write-Host "✅ config directory copied"
+          } else {
+            throw "Source 'config' directory not found"
+          }
+          
+          Write-Host "Copying templates directory..."
+          if (Test-Path "templates") {
+            Copy-Item -Recurse -Force "templates" "build/" -ErrorAction Stop
+            Write-Host "✅ templates directory copied"
+          } else {
+            throw "Source 'templates' directory not found"
+          }
+          
+          Write-Host "Copying LICENSE.rtf..."
+          if (Test-Path "LICENSE.rtf") {
+            Copy-Item -Force "LICENSE.rtf" "build/" -ErrorAction Stop
+            Write-Host "✅ LICENSE.rtf copied"
+          } else {
+            throw "LICENSE.rtf file not found"
+          }
+          
           Write-Host "✅ All files copied successfully"
         } catch {
           Write-Host "❌ File copy failed: $($_.Exception.Message)"
+          Write-Host "❌ Error details: $($_.Exception.GetType().Name)"
+          Write-Host "❌ Current directory contents:"
+          Get-ChildItem -Force | ForEach-Object { Write-Host "  $($_.Name) ($($_.Mode))" }
           exit 1
         }
         
