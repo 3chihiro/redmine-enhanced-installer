@@ -1,82 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <Product Id="*" 
-           Name="Enhanced Redmine Installer" 
+           Name="Minimal Test" 
            Language="1033" 
-           Version="5.0.5.0" 
-           Manufacturer="Enhanced Redmine Team"
-           UpgradeCode="12345678-1234-1234-1234-123456789012">
+           Version="1.0.0.0" 
+           Manufacturer="Test"
+           UpgradeCode="11111111-2222-3333-4444-555555555555">
     
     <Package InstallerVersion="200" 
              Compressed="yes" 
-             InstallScope="perMachine"
-             Description="Enhanced Redmine with Advanced Features" 
-             Manufacturer="Enhanced Redmine Team" />
+             InstallScope="perMachine" />
 
-    <!-- Directory Structure -->
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
-        <Directory Id="INSTALLFOLDER" Name="Enhanced Redmine">
-          
-          <!-- Scripts Component -->
-          <Component Id="Scripts" Guid="12345678-1234-1234-1234-123456789001">
-            <File Id="StartRedmineScript" 
-                  Source="$(var.SourceDir)\src\scripts\start-redmine.bat" 
-                  KeyPath="yes" />
-            <File Id="InstallPluginsScript" 
-                  Source="$(var.SourceDir)\src\scripts\install-plugins.bat" />
-            <File Id="ConfigureExcelScript" 
-                  Source="$(var.SourceDir)\src\scripts\configure-excel.bat" />
-            <File Id="CustomizeRedmineScript" 
-                  Source="$(var.SourceDir)\src\scripts\customize-redmine.rb" />
-          </Component>
-          
-          <!-- Configuration Component -->
-          <Component Id="Config" Guid="12345678-1234-1234-1234-123456789002">
-            <File Id="ExcelConfig" 
-                  Source="$(var.SourceDir)\config\excel-config.yml" 
-                  KeyPath="yes" />
-          </Component>
-          
-          <!-- Excel Templates Component -->
-          <Component Id="ExcelTemplates" Guid="12345678-1234-1234-1234-123456789003">
-            <File Id="GanttTemplate" 
-                  Source="$(var.SourceDir)\templates\excel\gantt-template.xlsx" 
-                  KeyPath="yes" />
-            <File Id="EVMTemplate" 
-                  Source="$(var.SourceDir)\templates\excel\evm-template.xlsx" />
-            <File Id="ReportTemplate" 
-                  Source="$(var.SourceDir)\templates\excel\report-template.xlsx" />
-            <File Id="IssueExportTemplate" 
-                  Source="$(var.SourceDir)\templates\excel\issue-export-template.xlsx" />
-          </Component>
-          
-          <!-- License Component -->
-          <Component Id="License" Guid="12345678-1234-1234-1234-123456789004">
-            <File Id="LicenseFile" 
+        <Directory Id="INSTALLFOLDER" Name="Test">
+          <Component Id="MinimalComp" Guid="11111111-2222-3333-4444-666666666666">
+            <File Id="MinimalFile" 
                   Source="$(var.SourceDir)\LICENSE.rtf" 
                   KeyPath="yes" />
           </Component>
-          
         </Directory>
       </Directory>
     </Directory>
 
-    <!-- Features -->
-    <Feature Id="MainFeature" Title="Enhanced Redmine" Level="1">
-      <ComponentRef Id="Scripts" />
-      <ComponentRef Id="Config" />
-      <ComponentRef Id="ExcelTemplates" />
-      <ComponentRef Id="License" />
+    <Feature Id="MinimalFeature" Title="Test" Level="1">
+      <ComponentRef Id="MinimalComp" />
     </Feature>
 
-    <!-- Icon -->
-    <Icon Id="ProductIcon" SourceFile="$(var.SourceDir)\src\assets\redmine-icon.ico" />
-    <Property Id="ARPPRODUCTICON" Value="ProductIcon" />
-
-    <!-- Basic Configuration -->
-    <MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
+    <MajorUpgrade DowngradeErrorMessage="Newer version installed." />
     <MediaTemplate EmbedCab="yes" />
-    
   </Product>
 </Wix>

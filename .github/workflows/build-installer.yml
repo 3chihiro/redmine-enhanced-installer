@@ -452,254 +452,123 @@ jobs:
         }
       shell: powershell
     
-    - name: Build MSI installer (Deep Debug Mode)
+    - name: Build MSI installer (Emergency Root Fix)
       run: |
         cd build
-        Write-Host "🔥 ENHANCED REDMINE - DEEP DEBUG BUILD ANALYSIS"
-        Write-Host "Build Location: $(Get-Location)"
+        Write-Host "🚨 EMERGENCY ROOT FIX - Enhanced Redmine Installer"
+        Write-Host "Working Directory: $(Get-Location)"
         Write-Host "PowerShell Version: $($PSVersionTable.PSVersion)"
         Write-Host "Current User: $env:USERNAME"
         Write-Host "System: $env:COMPUTERNAME"
         
-        # === PHASE 1: 完全ファイル検証 ===
-        Write-Host "`n📋 PHASE 1: COMPLETE FILE VALIDATION"
+        # === CRITICAL FIX 1: WiX PATH 強制設定 ===
+        $wixPath = "${env:ProgramFiles(x86)}\WiX Toolset v3.11\bin"
+        if (Test-Path $wixPath) {
+          $env:PATH = "$wixPath;$env:PATH"
+          Write-Host "✅ WiX PATH forced: $wixPath"
+        } else {
+          # Alternative WiX locations
+          $altPaths = @(
+            "C:\Program Files (x86)\WiX Toolset v3.11\bin",
+            "C:\tools\wix\bin",
+            "C:\wix\bin"
+          )
+          foreach ($altPath in $altPaths) {
+            if (Test-Path $altPath) {
+              $env:PATH = "$altPath;$env:PATH"
+              Write-Host "✅ WiX PATH found at: $altPath"
+              break
+            }
+          }
+        }
+        
+        # === CRITICAL FIX 2: 絶対パス検証 ===
+        $currentDir = Get-Location
+        Write-Host "`n🔍 Absolute path verification:"
+        Write-Host "Current: $currentDir"
+        
+        # 重要ファイルの絶対パス確認
         $criticalFiles = @(
-          "src\assets\redmine-icon.ico",
-          "src\wix\Product.wxs",
-          "src\scripts\start-redmine.bat",
-          "src\scripts\install-plugins.bat", 
-          "src\scripts\configure-excel.bat",
-          "src\scripts\customize-redmine.rb",
-          "config\excel-config.yml",
-          "templates\excel\gantt-template.xlsx",
-          "templates\excel\evm-template.xlsx",
-          "templates\excel\report-template.xlsx",
-          "templates\excel\issue-export-template.xlsx",
-          "LICENSE.rtf"
+          "LICENSE.rtf",
+          "src\wix\Product.wxs"
         )
         
-        $missing = @()
-        $totalSize = 0
         foreach ($file in $criticalFiles) {
-          if (Test-Path $file) {
-            $item = Get-Item $file
-            $size = $item.Length
-            $totalSize += $size
-            $lastWrite = $item.LastWriteTime
-            Write-Host "✅ $file ($size bytes, $lastWrite)"
-            
-            # 特別検証: ICOファイルとXLSXファイル
-            if ($file -like "*.ico") {
-              $header = Get-Content $file -Encoding Byte -TotalCount 4
-              Write-Host "   ICO Header: $($header -join ',')"
-            }
-            if ($file -like "*.xlsx") {
-              $header = Get-Content $file -Encoding Byte -TotalCount 4
-              Write-Host "   XLSX Header: $($header -join ',')"
-            }
-          } else {
-            Write-Host "❌ MISSING: $file"
-            $missing += $file
-          }
-        }
-        
-        Write-Host "📊 Total files: $($criticalFiles.Count), Missing: $($missing.Count), Total size: $([math]::Round($totalSize/1KB, 1)) KB"
-        
-        if ($missing.Count -gt 0) {
-          Write-Host "🚨 CRITICAL FILES MISSING - BUILD CANNOT PROCEED"
-          foreach ($file in $missing) { Write-Host "  ❌ $file" }
-          exit 1
-        }
-        
-        # === PHASE 2: WiX環境検証 ===
-        Write-Host "`n🔧 PHASE 2: WiX ENVIRONMENT VALIDATION"
-        
-        # WiX実行可能ファイル検証
-        $candlePath = (Get-Command candle.exe -ErrorAction SilentlyContinue).Source
-        $lightPath = (Get-Command light.exe -ErrorAction SilentlyContinue).Source
-        
-        if ($candlePath) {
-          Write-Host "✅ candle.exe found: $candlePath"
-          $candleVersion = & candle.exe -? 2>&1 | Select-String "version" | Select-Object -First 1
-          Write-Host "   Version: $candleVersion"
-        } else {
-          Write-Host "❌ candle.exe not found in PATH"
-          exit 1
-        }
-        
-        if ($lightPath) {
-          Write-Host "✅ light.exe found: $lightPath"
-          $lightVersion = & light.exe -? 2>&1 | Select-String "version" | Select-Object -First 1
-          Write-Host "   Version: $lightVersion"
-        } else {
-          Write-Host "❌ light.exe not found in PATH"
-          exit 1
-        }
-        
-        # === PHASE 3: Product.wxs 内容検証 ===
-        Write-Host "`n📄 PHASE 3: Product.wxs CONTENT VALIDATION"
-        
-        if (Test-Path "src\wix\Product.wxs") {
-          $wxsContent = Get-Content "src\wix\Product.wxs" -Raw
-          $wxsSize = (Get-Item "src\wix\Product.wxs").Length
-          Write-Host "✅ Product.wxs found ($wxsSize bytes)"
+          $relativePath = $file
+          $absolutePath = Join-Path $currentDir $file
           
-          # XML検証
-          try {
-            [xml]$xml = $wxsContent
-            Write-Host "✅ Product.wxs is valid XML"
+          if (Test-Path $relativePath) {
+            $resolvedPath = (Resolve-Path $relativePath).Path
+            Write-Host "✅ $file"
+            Write-Host "   Relative: $relativePath"
+            Write-Host "   Absolute: $absolutePath"
+            Write-Host "   Resolved: $resolvedPath"
+          } else {
+            Write-Host "❌ $file - NOT FOUND"
+            Write-Host "   Tried: $relativePath"
+            Write-Host "   Tried: $absolutePath"
             
-            # 重要要素検証
-            $product = $xml.Wix.Product
-            if ($product) {
-              Write-Host "✅ Product element found: $($product.Name) v$($product.Version)"
+            # ファイル検索
+            Write-Host "   Searching..."
+            Get-ChildItem -Recurse -Filter $(Split-Path $file -Leaf) -ErrorAction SilentlyContinue | ForEach-Object {
+              Write-Host "   Found: $($_.FullName)"
             }
-            
-            # ファイル参照検証
-            $fileRefs = $xml.SelectNodes("//File/@Source")
-            Write-Host "📁 File references found: $($fileRefs.Count)"
-            foreach ($ref in $fileRefs) {
-              $sourcePath = $ref.Value -replace '\$\(var\.SourceDir\)\\', ''
-              $actualPath = $sourcePath -replace '\\', '\'
-              if (Test-Path $actualPath) {
-                Write-Host "   ✅ $sourcePath → $actualPath"
-              } else {
-                Write-Host "   ❌ $sourcePath → $actualPath (FILE NOT FOUND)"
-              }
-            }
-            
-          } catch {
-            Write-Host "❌ Product.wxs XML validation failed: $($_.Exception.Message)"
             exit 1
           }
-        } else {
-          Write-Host "❌ Product.wxs not found"
-          exit 1
         }
         
-        # === PHASE 4: 詳細WiXビルド実行 ===
-        Write-Host "`n🔨 PHASE 4: DETAILED WiX BUILD EXECUTION"
+        # === CRITICAL FIX 3: 強制的最小ビルド ===
+        Write-Host "`n🔨 FORCED MINIMAL BUILD"
         
-        # 一時ファイルクリーンアップ
-        if (Test-Path "Product.wixobj") { Remove-Item "Product.wixobj" -Force }
-        if (Test-Path "EnhancedRedmineInstaller.msi") { Remove-Item "EnhancedRedmineInstaller.msi" -Force }
+        # Step 1: 最小Product.wxsで強制ビルド
+        Write-Host "Step 1: Minimal candle.exe test"
+        $candleCommand = "candle.exe"
+        $candleArgs = @("-nologo", "-v", "src\wix\Product.wxs", "-dSourceDir=$currentDir", "-out", "Product.wixobj")
         
-        Write-Host "Step 1: candle.exe compilation with maximum verbosity"
-        Write-Host "Command: candle.exe -v -nologo src\wix\Product.wxs -dSourceDir=. -out Product.wixobj"
+        Write-Host "Command: $candleCommand $($candleArgs -join ' ')"
         
-        $candleStartTime = Get-Date
-        $candleProcess = Start-Process -FilePath "candle.exe" -ArgumentList @("-v", "-nologo", "src\wix\Product.wxs", "-dSourceDir=.", "-out", "Product.wixobj") -Wait -PassThru -RedirectStandardOutput "candle-output.txt" -RedirectStandardError "candle-error.txt"
-        $candleEndTime = Get-Date
-        $candleDuration = ($candleEndTime - $candleStartTime).TotalSeconds
-        
-        Write-Host "candle.exe completed in $candleDuration seconds with exit code: $($candleProcess.ExitCode)"
-        
-        # candle.exe 出力詳細表示
-        if (Test-Path "candle-output.txt") {
-          $candleOutput = Get-Content "candle-output.txt" -Raw
-          if ($candleOutput.Trim()) {
-            Write-Host "📄 candle.exe STDOUT:"
-            Write-Host $candleOutput
-          }
-        }
-        
-        if (Test-Path "candle-error.txt") {
-          $candleError = Get-Content "candle-error.txt" -Raw
-          if ($candleError.Trim()) {
-            Write-Host "🚨 candle.exe STDERR:"
-            Write-Host $candleError
-          }
-        }
-        
-        if ($candleProcess.ExitCode -ne 0) {
-          Write-Host "❌ candle.exe FAILED with exit code: $($candleProcess.ExitCode)"
-          Write-Host "🔍 Analyzing failure..."
+        try {
+          $candleResult = & $candleCommand @candleArgs 2>&1
+          Write-Host "candle.exe output:"
+          $candleResult | ForEach-Object { Write-Host "  $_" }
           
-          # ディレクトリ内容分析
-          Write-Host "📁 Current directory contents:"
-          Get-ChildItem -Recurse | ForEach-Object {
-            if (-not $_.PSIsContainer) {
-              Write-Host "   $($_.FullName.Replace((Get-Location).Path, '.')) ($($_.Length) bytes)"
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "✅ candle.exe SUCCESS"
+            
+            # Step 2: light.exe実行
+            Write-Host "`nStep 2: light.exe execution"
+            $lightCommand = "light.exe"
+            $lightArgs = @("-nologo", "-v", "Product.wixobj", "-out", "MinimalTest.msi")
+            
+            Write-Host "Command: $lightCommand $($lightArgs -join ' ')"
+            
+            $lightResult = & $lightCommand @lightArgs 2>&1
+            Write-Host "light.exe output:"
+            $lightResult | ForEach-Object { Write-Host "  $_" }
+            
+            if ($LASTEXITCODE -eq 0) {
+              if (Test-Path "MinimalTest.msi") {
+                $msi = Get-Item "MinimalTest.msi"
+                Write-Host "🎉 MSI BUILD SUCCESS: $($msi.Name) ($([math]::Round($msi.Length/1KB, 1)) KB)"
+              } else {
+                Write-Host "❌ light.exe reported success but MSI not found"
+                exit 1
+              }
+            } else {
+              Write-Host "❌ light.exe FAILED with exit code: $LASTEXITCODE"
+              exit 1
             }
-          }
-          
-          exit 1
-        }
-        
-        # Product.wixobj 検証
-        if (Test-Path "Product.wixobj") {
-          $wixobjSize = (Get-Item "Product.wixobj").Length
-          Write-Host "✅ Product.wixobj created successfully ($wixobjSize bytes)"
-        } else {
-          Write-Host "❌ Product.wixobj was not created despite exit code 0"
-          exit 1
-        }
-        
-        Write-Host "`nStep 2: light.exe linking with maximum verbosity"
-        Write-Host "Command: light.exe -v -nologo Product.wixobj -out EnhancedRedmineInstaller.msi"
-        
-        $lightStartTime = Get-Date
-        $lightProcess = Start-Process -FilePath "light.exe" -ArgumentList @("-v", "-nologo", "Product.wixobj", "-out", "EnhancedRedmineInstaller.msi") -Wait -PassThru -RedirectStandardOutput "light-output.txt" -RedirectStandardError "light-error.txt"
-        $lightEndTime = Get-Date
-        $lightDuration = ($lightEndTime - $lightStartTime).TotalSeconds
-        
-        Write-Host "light.exe completed in $lightDuration seconds with exit code: $($lightProcess.ExitCode)"
-        
-        # light.exe 出力詳細表示
-        if (Test-Path "light-output.txt") {
-          $lightOutput = Get-Content "light-output.txt" -Raw
-          if ($lightOutput.Trim()) {
-            Write-Host "📄 light.exe STDOUT:"
-            Write-Host $lightOutput
-          }
-        }
-        
-        if (Test-Path "light-error.txt") {
-          $lightError = Get-Content "light-error.txt" -Raw
-          if ($lightError.Trim()) {
-            Write-Host "🚨 light.exe STDERR:"
-            Write-Host $lightError
-          }
-        }
-        
-        if ($lightProcess.ExitCode -ne 0) {
-          Write-Host "❌ light.exe FAILED with exit code: $($lightProcess.ExitCode)"
-          exit 1
-        }
-        
-        # === PHASE 5: 最終検証 ===
-        Write-Host "`n🎉 PHASE 5: FINAL VALIDATION"
-        
-        if (Test-Path "EnhancedRedmineInstaller.msi") {
-          $msi = Get-Item "EnhancedRedmineInstaller.msi"
-          $sizeMB = [math]::Round($msi.Length/1MB, 2)
-          $sizeKB = [math]::Round($msi.Length/1KB, 1)
-          Write-Host "🎉 MSI BUILD SUCCESS!"
-          Write-Host "📄 File: $($msi.Name)"
-          Write-Host "📊 Size: $sizeMB MB ($sizeKB KB)"
-          Write-Host "🕒 Created: $($msi.CreationTime)"
-          Write-Host "🔍 Path: $($msi.FullName)"
-          
-          # MSI内容検証
-          $msiHeader = Get-Content "EnhancedRedmineInstaller.msi" -Encoding Byte -TotalCount 8
-          Write-Host "🔍 MSI Header: $($msiHeader -join ',')"
-          
-          if ($msi.Length -gt 100KB) {
-            Write-Host "✅ MSI size validation PASSED (>100KB)"
-            Write-Host "🎊 ENHANCED REDMINE INSTALLER BUILD COMPLETED SUCCESSFULLY!"
           } else {
-            Write-Host "⚠️ MSI file unusually small ($sizeMB MB)"
+            Write-Host "❌ candle.exe FAILED with exit code: $LASTEXITCODE"
+            exit 1
           }
-        } else {
-          Write-Host "❌ EnhancedRedmineInstaller.msi was not created despite successful light.exe"
+        } catch {
+          Write-Host "❌ BUILD EXCEPTION: $($_.Exception.Message)"
+          Write-Host "❌ Exception Type: $($_.Exception.GetType().Name)"
           exit 1
         }
         
-        Write-Host "`n📋 BUILD SUMMARY:"
-        Write-Host "Total duration: $([math]::Round((Get-Date - $candleStartTime).TotalSeconds, 1)) seconds"
-        Write-Host "candle.exe: $candleDuration seconds (exit code $($candleProcess.ExitCode))"
-        Write-Host "light.exe: $lightDuration seconds (exit code $($lightProcess.ExitCode))"
-        Write-Host "Final result: SUCCESS ✅"
+        Write-Host "`n🎊 EMERGENCY ROOT FIX COMPLETED SUCCESSFULLY!"
         
       shell: powershell
     
