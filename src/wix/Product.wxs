@@ -4,15 +4,15 @@
            Name="Enhanced Redmine Installer" 
            Language="1033" 
            Version="5.0.5.0" 
-           Manufacturer="Redmine Enhanced Team"
+           Manufacturer="Enhanced Redmine Team"
            UpgradeCode="12345678-1234-1234-1234-123456789012">
     
     <Package InstallerVersion="200" 
              Compressed="yes" 
              InstallScope="perMachine"
-             Description="Enhanced Redmine with Gantt Charts, EVM, Excel Export and Advanced Reporting Plugins" />
+             Description="Enhanced Redmine with Advanced Gantt, Excel, EVM Features" />
 
-    <!-- Define installation directory structure -->
+    <!-- Installation Directory Structure -->
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
         <Directory Id="INSTALLFOLDER" Name="Enhanced Redmine">
@@ -26,77 +26,36 @@
                   Source="$(var.SourceDir)\src\scripts\install-plugins.bat" />
             <File Id="ConfigureExcelScript" 
                   Source="$(var.SourceDir)\src\scripts\configure-excel.bat" />
+            <File Id="CustomizeRedmineScript" 
+                  Source="$(var.SourceDir)\src\scripts\customize-redmine.rb" />
           </Component>
           
-          <!-- Registry Entries -->
-          <Component Id="RegistryEntries" Guid="12345678-1234-1234-1234-123456789002">
-            <RegistryKey Root="HKLM" Key="SOFTWARE\Enhanced Redmine">
-              <RegistryValue Name="InstallPath" Value="[INSTALLFOLDER]" Type="string" KeyPath="yes" />
-              <RegistryValue Name="Version" Value="5.0.5" Type="string" />
-              <RegistryValue Name="ExcelPluginEnabled" Value="1" Type="integer" />
-              <RegistryValue Name="GanttPluginEnabled" Value="1" Type="integer" />
-              <RegistryValue Name="EVMPluginEnabled" Value="1" Type="integer" />
-            </RegistryKey>
+          <!-- Configuration Files -->
+          <Component Id="ConfigurationFiles" Guid="12345678-1234-1234-1234-123456789002">
+            <File Id="ExcelConfig" 
+                  Source="$(var.SourceDir)\config\excel-config.yml" 
+                  KeyPath="yes" />
           </Component>
           
-          <!-- Windows Service Configuration -->
-          <Component Id="ServiceConfig" Guid="12345678-1234-1234-1234-123456789003">
-            <ServiceInstall Id="RedmineService" 
-                           Name="Enhanced Redmine Service"
-                           DisplayName="Enhanced Redmine Web Application Service"
-                           Description="Enhanced Redmine project management web application with advanced plugins"
-                           Type="ownProcess"
-                           Start="auto"
-                           Account="LocalSystem"
-                           ErrorControl="normal"
-                           Arguments="-f [INSTALLFOLDER]start-redmine.bat" />
-            <ServiceControl Id="StartRedmineService" 
-                           Name="Enhanced Redmine Service" 
-                           Start="install" 
-                           Stop="both" 
-                           Remove="uninstall" 
-                           Wait="yes" />
+          <!-- Excel Templates -->
+          <Component Id="ExcelTemplates" Guid="12345678-1234-1234-1234-123456789003">
+            <File Id="GanttTemplate" 
+                  Source="$(var.SourceDir)\templates\excel\gantt-template.xlsx" 
+                  KeyPath="yes" />
+            <File Id="EVMTemplate" 
+                  Source="$(var.SourceDir)\templates\excel\evm-template.xlsx" />
+            <File Id="ReportTemplate" 
+                  Source="$(var.SourceDir)\templates\excel\report-template.xlsx" />
+            <File Id="IssueExportTemplate" 
+                  Source="$(var.SourceDir)\templates\excel\issue-export-template.xlsx" />
           </Component>
           
-          <!-- Scripts Directory -->
-          <Directory Id="ScriptsDir" Name="scripts">
-            <Component Id="ScriptsComponent" Guid="12345678-1234-1234-1234-123456789004">
-              <File Id="CustomizeRedmineScript" 
-                    Source="$(var.SourceDir)\src\scripts\customize-redmine.rb" 
-                    KeyPath="yes" />
-            </Component>
-          </Directory>
-          
-          <!-- Configuration Directory -->
-          <Directory Id="ConfigDir" Name="config">
-            <Directory Id="ExcelConfigDir" Name="excel">
-              <Component Id="ConfigurationFiles" Guid="12345678-1234-1234-1234-123456789005">
-                <File Id="ExcelConfig" 
-                      Source="$(var.SourceDir)\config\excel-config.yml" 
-                      KeyPath="yes" />
-              </Component>
-            </Directory>
-          </Directory>
-          
-          <!-- Templates Directory -->
-          <Directory Id="TemplatesDir" Name="templates">
-            <Directory Id="ExcelTemplatesDir" Name="excel">
-              <Component Id="ExcelTemplates" Guid="12345678-1234-1234-1234-123456789006">
-                <File Id="GanttTemplate" 
-                      Source="$(var.SourceDir)\templates\excel\gantt-template.xlsx" 
-                      KeyPath="yes" />
-                <File Id="ReportTemplate" 
-                      Source="$(var.SourceDir)\templates\excel\report-template.xlsx" />
-                <File Id="EVMTemplate" 
-                      Source="$(var.SourceDir)\templates\excel\evm-template.xlsx" />
-                <File Id="IssueExportTemplate" 
-                      Source="$(var.SourceDir)\templates\excel\issue-export-template.xlsx" />
-              </Component>
-            </Directory>
-          </Directory>
-          
-          <!-- Log Directory -->
-          <Directory Id="LogDir" Name="logs" />
+          <!-- License File -->
+          <Component Id="LicenseFile" Guid="12345678-1234-1234-1234-123456789004">
+            <File Id="LicenseRTF" 
+                  Source="$(var.SourceDir)\LICENSE.rtf" 
+                  KeyPath="yes" />
+          </Component>
           
         </Directory>
       </Directory>
@@ -104,21 +63,16 @@
       <!-- Start Menu Shortcuts -->
       <Directory Id="ProgramMenuFolder">
         <Directory Id="ApplicationProgramsFolder" Name="Enhanced Redmine">
-          <Component Id="StartMenuShortcuts" Guid="12345678-1234-1234-1234-123456789007">
+          <Component Id="StartMenuShortcuts" Guid="12345678-1234-1234-1234-123456789005">
             <Shortcut Id="StartRedmineShortcut"
                      Name="Enhanced Redmine"
                      Description="Start Enhanced Redmine Web Application"
                      Target="[INSTALLFOLDER]start-redmine.bat"
                      WorkingDirectory="INSTALLFOLDER"
                      Icon="RedmineIcon" />
-            <Shortcut Id="ConfigureExcelShortcut"
-                     Name="Configure Excel Features"
-                     Description="Configure Excel Export and Integration Features"
-                     Target="[INSTALLFOLDER]configure-excel.bat"
-                     WorkingDirectory="INSTALLFOLDER" />
             <RemoveFolder Id="RemoveApplicationProgramsFolder" On="uninstall" />
             <RegistryValue Root="HKCU" 
-                          Key="Software\Microsoft\Enhanced Redmine" 
+                          Key="Software\Enhanced Redmine" 
                           Name="StartMenuInstalled" 
                           Type="integer" 
                           Value="1" 
@@ -127,92 +81,20 @@
         </Directory>
       </Directory>
       
-      <!-- Desktop Shortcuts -->
-      <Directory Id="DesktopFolder">
-        <Component Id="DesktopShortcut" Guid="12345678-1234-1234-1234-123456789008">
-          <Shortcut Id="DesktopRedmineShortcut"
-                   Name="Enhanced Redmine"
-                   Description="Enhanced Redmine Project Management"
-                   Target="http://localhost:3000"
-                   Icon="RedmineIcon" />
-          <RegistryValue Root="HKCU" 
-                        Key="Software\Microsoft\Enhanced Redmine" 
-                        Name="DesktopShortcut" 
-                        Type="integer" 
-                        Value="1" 
-                        KeyPath="yes" />
-        </Component>
-      </Directory>
     </Directory>
 
-
-    <!-- Features -->
+    <!-- Features Definition -->
     <Feature Id="ProductFeature" Title="Enhanced Redmine Core" Level="1" AllowAdvertise="no">
       <ComponentRef Id="MainExecutable" />
-      <ComponentRef Id="RegistryEntries" />
-      <ComponentRef Id="ScriptsComponent" />
       <ComponentRef Id="ConfigurationFiles" />
+      <ComponentRef Id="ExcelTemplates" />
+      <ComponentRef Id="LicenseFile" />
       <ComponentRef Id="StartMenuShortcuts" />
-      <ComponentRef Id="DesktopShortcut" />
-      
-      <Feature Id="ExcelIntegration" 
-               Title="Excel Integration Features" 
-               Description="Advanced Excel export and import capabilities with custom templates"
-               Level="1" 
-               AllowAdvertise="no">
-        <ComponentRef Id="ExcelTemplates" />
-      </Feature>
-      
-      <Feature Id="GanttCharts" 
-               Title="Advanced Gantt Charts" 
-               Description="Professional Gantt chart functionality with timeline management"
-               Level="1" 
-               AllowAdvertise="no" />
-      
-      <Feature Id="EVMTracking" 
-               Title="Earned Value Management (EVM)" 
-               Description="Project performance tracking using EVM methodology"
-               Level="1" 
-               AllowAdvertise="no" />
-      
-      <Feature Id="AdvancedReporting" 
-               Title="Advanced Reporting Engine" 
-               Description="Comprehensive reporting with custom dashboards and analytics"
-               Level="1" 
-               AllowAdvertise="no" />
-      
-      <Feature Id="WindowsService" 
-               Title="Windows Service Integration" 
-               Description="Run Redmine as a Windows service for automatic startup"
-               Level="2" 
-               AllowAdvertise="no">
-        <ComponentRef Id="ServiceConfig" />
-      </Feature>
     </Feature>
 
     <!-- UI Configuration -->
-    <UIRef Id="WixUI_FeatureTree" />
+    <UIRef Id="WixUI_Minimal" />
     <UIRef Id="WixUI_ErrorProgressText" />
-
-    <!-- Custom Actions for Post-Installation -->
-    <CustomAction Id="InstallBitnamiRedmine" 
-                  Directory="INSTALLFOLDER" 
-                  ExeCommand="[INSTALLFOLDER]scripts\install-plugins.bat"
-                  Execute="deferred" 
-                  Impersonate="no" 
-                  Return="check" />
-    
-    <CustomAction Id="ConfigureExcelFeatures" 
-                  Directory="INSTALLFOLDER" 
-                  ExeCommand="[INSTALLFOLDER]scripts\configure-excel.bat"
-                  Execute="deferred" 
-                  Impersonate="no" 
-                  Return="check" />
-
-    <InstallExecuteSequence>
-      <Custom Action="InstallBitnamiRedmine" After="InstallFiles">NOT Installed</Custom>
-      <Custom Action="ConfigureExcelFeatures" After="InstallBitnamiRedmine">NOT Installed</Custom>
-    </InstallExecuteSequence>
 
     <!-- Major Upgrade Configuration -->
     <MajorUpgrade DowngradeErrorMessage="A newer version of Enhanced Redmine is already installed." />
@@ -225,10 +107,6 @@
     <!-- System Requirements -->
     <Condition Message="This application requires Windows 10 or higher.">
       <![CDATA[Installed OR VersionNT >= 1000]]>
-    </Condition>
-    
-    <Condition Message="This application requires .NET Framework 4.8 or higher.">
-      <![CDATA[Installed OR NETFRAMEWORK48]]>
     </Condition>
 
     <!-- License Agreement -->
