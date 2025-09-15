@@ -289,28 +289,55 @@ jobs:
     
     - name: Create build directories
       run: |
+        Write-Host "🔨 Creating build directory structure..."
         New-Item -ItemType Directory -Force -Path build
-        Copy-Item -Recurse src build/src
-        Copy-Item -Recurse config build/config  
-        Copy-Item -Recurse templates build/templates
-        Copy-Item LICENSE.rtf build/
-        Write-Host "✅ Build directory structure created"
-        Write-Host "Verifying critical files:"
+        
+        # Copy with error handling
+        try {
+          Copy-Item -Recurse -Force src build/src -ErrorAction Stop
+          Copy-Item -Recurse -Force config build/config -ErrorAction Stop
+          Copy-Item -Recurse -Force templates build/templates -ErrorAction Stop
+          Copy-Item -Force LICENSE.rtf build/ -ErrorAction Stop
+          Write-Host "✅ All files copied successfully"
+        } catch {
+          Write-Host "❌ File copy failed: $($_.Exception.Message)"
+          exit 1
+        }
+        
+        Write-Host "📋 Verifying ALL critical files:"
         $criticalFiles = @(
           "build/src/assets/redmine-icon.ico",
           "build/src/wix/Product.wxs", 
-          "build/LICENSE.rtf",
-          "build/templates/gantt-template.xlsx"
+          "build/src/scripts/start-redmine.bat",
+          "build/src/scripts/install-plugins.bat", 
+          "build/src/scripts/configure-excel.bat",
+          "build/src/scripts/customize-redmine.rb",
+          "build/config/excel-config.yml",
+          "build/templates/gantt-template.xlsx",
+          "build/templates/excel/evm-template.xlsx",
+          "build/templates/excel/report-template.xlsx",
+          "build/templates/excel/issue-export-template.xlsx",
+          "build/LICENSE.rtf"
         )
+        
+        $missing = @()
         foreach ($file in $criticalFiles) {
           if (Test-Path $file) {
             $size = (Get-Item $file).Length
             Write-Host "✅ $file ($size bytes)"
           } else {
             Write-Host "❌ MISSING: $file"
-            exit 1
+            $missing += $file
           }
         }
+        
+        if ($missing.Count -gt 0) {
+          Write-Host "🚨 CRITICAL: $($missing.Count) files missing!"
+          Write-Host "Missing files: $($missing -join ', ')"
+          exit 1
+        }
+        
+        Write-Host "🎉 All $($criticalFiles.Count) critical files verified!"
       shell: powershell
     
     - name: Validate WiX source files
@@ -359,9 +386,15 @@ jobs:
               }
             }
             
-            Write-Host "`nBuilding MSI..."
+            Write-Host "`n🔥 Building MSI with WiX Toolset..."
+            Write-Host "Current working directory: $(Get-Location)"
+            Write-Host "Running: candle.exe -nologo src/wix/Product.wxs -dSourceDir=. -out Product.wixobj"
+            
             candle.exe -nologo src/wix/Product.wxs -dSourceDir=. -out Product.wixobj -v -sw1150
-            if ($LastExitCode -eq 0) {
+            $candleExitCode = $LastExitCode
+            Write-Host "Candle.exe exit code: $candleExitCode"
+            
+            if ($candleExitCode -eq 0) {
               light.exe -nologo Product.wixobj -out "EnhancedRedmineInstaller-${{ env.REDMINE_VERSION }}.msi" -ext WixUIExtension -v
               if ($LastExitCode -eq 0) {
                 Write-Host "✅ MSI installer built successfully"
