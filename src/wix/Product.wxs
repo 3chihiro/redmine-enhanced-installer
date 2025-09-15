@@ -54,9 +54,9 @@
     </Directory>
 
     <!-- Component Groups -->
-    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
-      
-      <!-- Main Application Files -->
+    
+    <!-- Main Installation Components -->
+    <ComponentGroup Id="MainComponents" Directory="INSTALLFOLDER">
       <Component Id="MainExecutable">
         <File Id="StartRedmineScript" 
               Source="$(var.SourceDir)\scripts\start-redmine.bat" 
@@ -68,29 +68,8 @@
         <File Id="CustomizeRedmineScript" 
               Source="$(var.SourceDir)\scripts\customize-redmine.rb" />
       </Component>
-
-      <!-- Configuration Files -->
-      <Component Id="ConfigurationFiles" Directory="ExcelConfigDir">
-        <File Id="ExcelConfig" 
-              Source="$(var.SourceDir)\config\excel-config.yml" 
-              KeyPath="yes" />
-      </Component>
-
-      <!-- Excel Templates -->
-      <Component Id="ExcelTemplates" Directory="ExcelTemplatesDir">
-        <File Id="GanttTemplate" 
-              Source="$(var.SourceDir)\templates\gantt-template.xlsx" 
-              KeyPath="yes" />
-        <File Id="ReportTemplate" 
-              Source="$(var.SourceDir)\templates\report-template.xlsx" />
-        <File Id="EVMTemplate" 
-              Source="$(var.SourceDir)\templates\evm-template.xlsx" />
-        <File Id="IssueExportTemplate" 
-              Source="$(var.SourceDir)\templates\issue-export-template.xlsx" />
-      </Component>
-
-      <!-- Registry Entries -->
-      <Component Id="RegistryEntries" Directory="INSTALLFOLDER">
+      
+      <Component Id="RegistryEntries">
         <RegistryKey Root="HKLM" Key="SOFTWARE\Enhanced Redmine">
           <RegistryValue Name="InstallPath" Value="[INSTALLFOLDER]" Type="string" KeyPath="yes" />
           <RegistryValue Name="Version" Value="5.0.5" Type="string" />
@@ -99,9 +78,8 @@
           <RegistryValue Name="EVMPluginEnabled" Value="1" Type="integer" />
         </RegistryKey>
       </Component>
-
-      <!-- Windows Service Configuration -->
-      <Component Id="ServiceConfig" Directory="INSTALLFOLDER">
+      
+      <Component Id="ServiceConfig">
         <ServiceInstall Id="RedmineService" 
                        Name="Enhanced Redmine Service"
                        DisplayName="Enhanced Redmine Web Application Service"
@@ -118,8 +96,34 @@
                        Remove="uninstall" 
                        Wait="yes" />
       </Component>
+    </ComponentGroup>
 
-      <!-- Start Menu Shortcuts -->
+    <!-- Configuration Components -->
+    <ComponentGroup Id="ConfigComponents" Directory="ExcelConfigDir">
+      <Component Id="ConfigurationFiles">
+        <File Id="ExcelConfig" 
+              Source="$(var.SourceDir)\config\excel-config.yml" 
+              KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Template Components -->
+    <ComponentGroup Id="TemplateComponents" Directory="ExcelTemplatesDir">
+      <Component Id="ExcelTemplates">
+        <File Id="GanttTemplate" 
+              Source="$(var.SourceDir)\templates\gantt-template.xlsx" 
+              KeyPath="yes" />
+        <File Id="ReportTemplate" 
+              Source="$(var.SourceDir)\templates\report-template.xlsx" />
+        <File Id="EVMTemplate" 
+              Source="$(var.SourceDir)\templates\evm-template.xlsx" />
+        <File Id="IssueExportTemplate" 
+              Source="$(var.SourceDir)\templates\issue-export-template.xlsx" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Shortcut Components -->
+    <ComponentGroup Id="ShortcutComponents">
       <Component Id="StartMenuShortcuts" Directory="ApplicationProgramsFolder">
         <Shortcut Id="StartRedmineShortcut"
                  Name="Enhanced Redmine"
@@ -141,7 +145,6 @@
                       KeyPath="yes" />
       </Component>
 
-      <!-- Desktop Shortcut -->
       <Component Id="DesktopShortcut" Directory="DesktopFolder">
         <Shortcut Id="DesktopRedmineShortcut"
                  Name="Enhanced Redmine"
@@ -155,19 +158,20 @@
                       Value="1" 
                       KeyPath="yes" />
       </Component>
-
     </ComponentGroup>
 
     <!-- Features -->
     <Feature Id="ProductFeature" Title="Enhanced Redmine Core" Level="1" AllowAdvertise="no">
-      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="MainComponents" />
+      <ComponentGroupRef Id="ConfigComponents" />
+      <ComponentGroupRef Id="ShortcutComponents" />
       
       <Feature Id="ExcelIntegration" 
                Title="Excel Integration Features" 
                Description="Advanced Excel export and import capabilities with custom templates"
                Level="1" 
                AllowAdvertise="no">
-        <ComponentRef Id="ExcelTemplates" />
+        <ComponentGroupRef Id="TemplateComponents" />
       </Feature>
       
       <Feature Id="GanttCharts" 
