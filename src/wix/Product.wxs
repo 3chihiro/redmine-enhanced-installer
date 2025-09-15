@@ -20,12 +20,12 @@
           <!-- Main Application Files -->
           <Component Id="MainExecutable" Guid="12345678-1234-1234-1234-123456789001">
             <File Id="StartRedmineScript" 
-                  Source="src\scripts\start-redmine.bat" 
+                  Source="$(var.SourceDir)\scripts\start-redmine.bat" 
                   KeyPath="yes" />
             <File Id="InstallPluginsScript" 
-                  Source="src\scripts\install-plugins.bat" />
+                  Source="$(var.SourceDir)\scripts\install-plugins.bat" />
             <File Id="ConfigureExcelScript" 
-                  Source="src\scripts\configure-excel.bat" />
+                  Source="$(var.SourceDir)\scripts\configure-excel.bat" />
           </Component>
           
           <!-- Registry Entries -->
@@ -62,7 +62,7 @@
           <Directory Id="ScriptsDir" Name="scripts">
             <Component Id="ScriptsComponent" Guid="12345678-1234-1234-1234-123456789004">
               <File Id="CustomizeRedmineScript" 
-                    Source="src\scripts\customize-redmine.rb" 
+                    Source="$(var.SourceDir)\scripts\customize-redmine.rb" 
                     KeyPath="yes" />
             </Component>
           </Directory>
@@ -72,7 +72,7 @@
             <Directory Id="ExcelConfigDir" Name="excel">
               <Component Id="ConfigurationFiles" Guid="12345678-1234-1234-1234-123456789005">
                 <File Id="ExcelConfig" 
-                      Source="config\excel-config.yml" 
+                      Source="$(var.SourceDir)\config\excel-config.yml" 
                       KeyPath="yes" />
               </Component>
             </Directory>
@@ -83,14 +83,14 @@
             <Directory Id="ExcelTemplatesDir" Name="excel">
               <Component Id="ExcelTemplates" Guid="12345678-1234-1234-1234-123456789006">
                 <File Id="GanttTemplate" 
-                      Source="templates\excel\gantt-template.xlsx" 
+                      Source="$(var.SourceDir)\templates\gantt-template.xlsx" 
                       KeyPath="yes" />
                 <File Id="ReportTemplate" 
-                      Source="templates\excel\report-template.xlsx" />
+                      Source="$(var.SourceDir)\templates\excel\report-template.xlsx" />
                 <File Id="EVMTemplate" 
-                      Source="templates\excel\evm-template.xlsx" />
+                      Source="$(var.SourceDir)\templates\excel\evm-template.xlsx" />
                 <File Id="IssueExportTemplate" 
-                      Source="templates\excel\issue-export-template.xlsx" />
+                      Source="$(var.SourceDir)\templates\excel\issue-export-template.xlsx" />
               </Component>
             </Directory>
           </Directory>
@@ -219,7 +219,7 @@
     <MediaTemplate EmbedCab="yes" />
 
     <!-- Icon Definition -->
-    <Icon Id="RedmineIcon" SourceFile="src\assets\redmine-icon.ico" />
+    <Icon Id="RedmineIcon" SourceFile="$(var.SourceDir)\assets\redmine-icon.ico" />
     <Property Id="ARPPRODUCTICON" Value="RedmineIcon" />
 
     <!-- System Requirements -->
@@ -232,7 +232,7 @@
     </Condition>
 
     <!-- License Agreement -->
-    <WixVariable Id="WixUILicenseRtf" Value="LICENSE.rtf" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.SourceDir)\LICENSE.rtf" />
 
   </Product>
 </Wix>
