@@ -83,7 +83,7 @@
             <Directory Id="ExcelTemplatesDir" Name="excel">
               <Component Id="ExcelTemplates" Guid="12345678-1234-1234-1234-123456789006">
                 <File Id="GanttTemplate" 
-                      Source="$(var.SourceDir)\templates\gantt-template.xlsx" 
+                      Source="$(var.SourceDir)\templates\excel\gantt-template.xlsx" 
                       KeyPath="yes" />
                 <File Id="ReportTemplate" 
                       Source="$(var.SourceDir)\templates\excel\report-template.xlsx" />
