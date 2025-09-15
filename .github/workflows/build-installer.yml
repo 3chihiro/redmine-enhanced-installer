@@ -289,10 +289,52 @@ jobs:
     
     - name: Create build directories
       run: |
-        Write-Host "🔨 Creating build directory structure..."
+        Write-Host "🔨 Creating build directory structure with pre-validation..."
         New-Item -ItemType Directory -Force -Path build
         
-        # Copy with error handling
+        # Pre-build validation: Check all critical files exist
+        Write-Host "🔍 Pre-build validation: Checking critical files..."
+        $criticalFiles = @(
+          "src/assets/redmine-icon.ico",
+          "src/wix/Product.wxs",
+          "src/scripts/start-redmine.bat",
+          "src/scripts/install-plugins.bat", 
+          "src/scripts/configure-excel.bat",
+          "src/scripts/customize-redmine.rb",
+          "config/excel-config.yml",
+          "templates/gantt-template.xlsx",
+          "templates/excel/gantt-template.xlsx",
+          "templates/excel/evm-template.xlsx",
+          "templates/excel/report-template.xlsx",
+          "templates/excel/issue-export-template.xlsx",
+          "LICENSE.rtf"
+        )
+        
+        $missingFiles = @()
+        foreach ($file in $criticalFiles) {
+          if (Test-Path $file) {
+            $size = (Get-Item $file).Length
+            Write-Host "✅ $file ($size bytes)"
+          } else {
+            Write-Host "❌ MISSING: $file"
+            $missingFiles += $file
+          }
+        }
+        
+        if ($missingFiles.Count -gt 0) {
+          Write-Host "🚨 CRITICAL ERROR: $($missingFiles.Count) files missing!"
+          Write-Host "Missing files:"
+          foreach ($file in $missingFiles) {
+            Write-Host "  - $file"
+          }
+          Write-Host "Build cannot proceed without these files."
+          exit 1
+        }
+        
+        Write-Host "🎉 All $($criticalFiles.Count) critical files validated successfully!"
+        
+        # Copy with enhanced error handling
+        Write-Host "📁 Copying files to build directory..."
         try {
           Copy-Item -Recurse -Force src build/src -ErrorAction Stop
           Copy-Item -Recurse -Force config build/config -ErrorAction Stop
