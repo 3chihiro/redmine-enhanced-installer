@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" 
+           Name="Enhanced Redmine Test" 
+           Language="1033" 
+           Version="5.0.5.0" 
+           Manufacturer="Enhanced Redmine Team">
+    
+    <Package InstallerVersion="200" 
+             Compressed="yes" 
+             InstallScope="perMachine"
+             Description="Minimal Test Build" />
+
+    <!-- Minimal Directory Structure -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="Enhanced Redmine Test">
+          
+          <!-- Single Test Component -->
+          <Component Id="TestComponent" Guid="12345678-1234-1234-1234-123456789999">
+            <File Id="TestFile" 
+                  Source="$(var.SourceDir)\LICENSE.rtf" 
+                  KeyPath="yes" />
+          </Component>
+          
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <!-- Single Feature -->
+    <Feature Id="TestFeature" Title="Test" Level="1">
+      <ComponentRef Id="TestComponent" />
+    </Feature>
+
+    <!-- Basic Configuration -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+    
+  </Product>
+</Wix>
