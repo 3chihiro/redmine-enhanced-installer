@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="E1234567-89AB-CDEF-0123-456789ABCDEF" 
+           Name="Enhanced Redmine" 
+           Language="1033" 
+           Version="5.0.5.0" 
+           Manufacturer="Enhanced Redmine Team">
+    
+    <Package InstallerVersion="200" 
+             Compressed="yes" 
+             InstallScope="perMachine" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="Enhanced Redmine">
+          <Component Id="MainComponent" Guid="F1234567-89AB-CDEF-0123-456789ABCDEF">
+            <CreateFolder/>
+            <RemoveFolder Id="RemoveINSTALLFOLDER" On="uninstall"/>
+            <RegistryValue Root="HKCU" Key="Software\Enhanced Redmine" 
+                          Name="installed" Type="integer" Value="1" KeyPath="yes"/>
+          </Component>
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <Feature Id="Complete" Title="Enhanced Redmine" Level="1">
+      <ComponentRef Id="MainComponent" />
+    </Feature>
+
+    <MediaTemplate EmbedCab="yes" />
+  </Product>
+</Wix>

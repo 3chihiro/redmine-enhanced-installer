@@ -1,0 +1,22 @@
+<Project DefaultTargets="BuildMSI" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+  <PropertyGroup>
+    <WixToolPath>$(ProgramFiles)\WiX Toolset v3.11\bin</WixToolPath>
+    <OutputName>EnhancedRedmineInstaller</OutputName>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <WixSource Include="UltraMinimal.wxs" />
+  </ItemGroup>
+  
+  <Target Name="BuildMSI">
+    <Message Text="Building MSI with MSBuild..." />
+    
+    <Exec Command="&quot;$(WixToolPath)\candle.exe&quot; -nologo @(WixSource) -out $(OutputName).wixobj" 
+          ContinueOnError="false" />
+          
+    <Exec Command="&quot;$(WixToolPath)\light.exe&quot; -nologo $(OutputName).wixobj -out $(OutputName).msi" 
+          ContinueOnError="false" />
+  </Target>
+  
+</Project>
