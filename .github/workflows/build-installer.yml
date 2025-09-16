@@ -246,8 +246,8 @@ jobs:
 
   # Build Windows installer (simplified version)
   build-windows:
-    runs-on: windows-2022  # 最新環境に変更
-    name: Build Windows Installer (New Architecture)
+    runs-on: windows-2019  # より安定したWindows-2019に変更
+    name: Build Windows Installer (Final Fix)
     needs: [security-scan, test-components]
     if: github.event_name == 'push' || github.event_name == 'release'
     permissions:
@@ -263,58 +263,89 @@ jobs:
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
     
-    - name: Install WiX Toolset
+    - name: Force Clean WiX Environment
       run: |
-        Write-Host "Installing WiX Toolset..."
-        $wixUrl = "https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311.exe"
-        $wixInstaller = "$env:TEMP\wix311.exe"
-        Invoke-WebRequest -Uri $wixUrl -OutFile $wixInstaller
-        Start-Process -FilePath $wixInstaller -ArgumentList "/quiet" -Wait
+        Write-Host "🔥 FORCE CLEANING WiX Environment"
         
-        # Add WiX to PATH
-        $wixPath = "${env:ProgramFiles(x86)}\WiX Toolset v3.11\bin"
-        echo "$wixPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        # 既存のWiXインストールをすべて削除
+        $wixPaths = @(
+          "${env:ProgramFiles(x86)}\WiX Toolset v3.11",
+          "C:\WiX",
+          "C:\tools\wix",
+          "C:\WiX311"
+        )
+        
+        foreach ($path in $wixPaths) {
+          if (Test-Path $path) {
+            Write-Host "Removing existing WiX at: $path"
+            Remove-Item $path -Recurse -Force -ErrorAction SilentlyContinue
+          }
+        }
+        
+        # PATH から WiX エントリを削除
+        $cleanPath = ($env:PATH -split ';' | Where-Object { $_ -notlike "*wix*" -and $_ -notlike "*WiX*" }) -join ';'
+        $env:PATH = $cleanPath
+        
+        Write-Host "✅ WiX environment completely cleaned"
       shell: powershell
     
-    - name: Install WiX Toolset (Alternative Method)
+    - name: Install WiX Toolset (Bulletproof Method)
       run: |
-        Write-Host "🔧 Installing WiX Toolset using comprehensive approach"
+        Write-Host "🔧 Installing WiX Toolset with BULLETPROOF method"
         
-        # Chocolateyでのインストール
+        # Method 1: 直接実行可能バイナリダウンロード
+        $wixBinUrl = "https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip"
+        $wixZip = "$env:TEMP\wix311-binaries.zip"
+        $wixDir = "C:\WiX311"
+        
         try {
-          Set-ExecutionPolicy Bypass -Scope Process -Force
-          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+          Write-Host "Downloading WiX binaries..."
+          Invoke-WebRequest -Uri $wixBinUrl -OutFile $wixZip -UseBasicParsing
           
-          # Chocolateyがインストールされていない場合はインストール
-          if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
-            iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-            $env:PATH = "$env:ALLUSERSPROFILE\chocolatey\bin;$env:PATH"
-          }
-          
-          # WiX Toolsetをインストール
-          choco install wixtoolset -y --force
-          
-          # PATHの更新
-          $env:PATH = "C:\Program Files (x86)\WiX Toolset v3.11\bin;$env:PATH"
-          echo "C:\Program Files (x86)\WiX Toolset v3.11\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          
-          Write-Host "✅ WiX Toolset installed via Chocolatey"
-        } catch {
-          Write-Host "❌ Chocolatey installation failed, trying manual approach"
-          
-          # 手動インストール（PowerShellダウンロード）
-          $wixUrl = "https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip"
-          $wixZip = "$env:TEMP\wix311-binaries.zip"
-          $wixDir = "C:\WiX"
-          
+          Write-Host "Extracting WiX binaries..."
           New-Item -ItemType Directory -Force -Path $wixDir
-          Invoke-WebRequest -Uri $wixUrl -OutFile $wixZip
           Expand-Archive -Path $wixZip -DestinationPath $wixDir -Force
           
+          # PATH に追加
           $env:PATH = "$wixDir;$env:PATH"
           echo "$wixDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           
-          Write-Host "✅ WiX Toolset installed manually"
+          Write-Host "✅ WiX Toolset installed successfully"
+          
+          # 即座に検証
+          $candleTest = & "$wixDir\candle.exe" -? 2>&1
+          if ($LASTEXITCODE -eq 0 -or $candleTest -like "*Windows Installer XML*") {
+            Write-Host "✅ candle.exe working correctly"
+          } else {
+            throw "candle.exe verification failed"
+          }
+          
+          $lightTest = & "$wixDir\light.exe" -? 2>&1  
+          if ($LASTEXITCODE -eq 0 -or $lightTest -like "*Windows Installer XML*") {
+            Write-Host "✅ light.exe working correctly"
+          } else {
+            throw "light.exe verification failed"
+          }
+          
+        } catch {
+          Write-Host "❌ Primary WiX installation failed: $($_.Exception.Message)"
+          
+          # Method 2: Chocolatey フォールバック
+          Write-Host "Trying Chocolatey fallback..."
+          try {
+            Set-ExecutionPolicy Bypass -Scope Process -Force
+            [System.Net.ServicePointManager]::SecurityProtocol = 3072
+            iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+            
+            choco install wixtoolset -y --force
+            $env:PATH = "${env:ProgramFiles(x86)}\WiX Toolset v3.11\bin;$env:PATH"
+            echo "${env:ProgramFiles(x86)}\WiX Toolset v3.11\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+            
+            Write-Host "✅ WiX installed via Chocolatey"
+          } catch {
+            Write-Host "❌ All WiX installation methods failed"
+            exit 1
+          }
         }
       shell: powershell
     
@@ -556,127 +587,168 @@ jobs:
         }
       shell: powershell
     
-    - name: Build MSI installer (Ultra-Simple Progressive)
+    - name: Absolute Minimal WiX Test
       run: |
         cd build
-        Write-Host "🔨 PHASE 2: Ultra-Simple MSI Generation"
-        
-        # Step 1: 最小限のProduct.wxsを作成
-        Write-Host "Creating ultra-minimal Product.wxs..."
+        Write-Host "🧪 ABSOLUTE MINIMAL WiX TEST"
+
+        # 超シンプルなWiXファイル作成（ファイル参照なし）
         @'
         <?xml version="1.0" encoding="UTF-8"?>
         <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-          <Product Id="E1234567-89AB-CDEF-0123-456789ABCDEF" 
-                   Name="Enhanced Redmine" 
+          <Product Id="11111111-2222-3333-4444-555555555555" 
+                   Name="Test" 
                    Language="1033" 
-                   Version="5.0.5.0" 
-                   Manufacturer="Enhanced Redmine Team">
+                   Version="1.0.0.0" 
+                   Manufacturer="Test">
             
-            <Package InstallerVersion="200" 
-                     Compressed="yes" 
-                     InstallScope="perMachine" />
+            <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
 
             <Directory Id="TARGETDIR" Name="SourceDir">
               <Directory Id="ProgramFilesFolder">
-                <Directory Id="INSTALLFOLDER" Name="Enhanced Redmine">
-                  <Component Id="MainComponent" Guid="F1234567-89AB-CDEF-0123-456789ABCDEF">
+                <Directory Id="INSTALLFOLDER" Name="Test">
+                  <Component Id="TestComp" Guid="66666666-7777-8888-9999-AAAAAAAAAAAA">
                     <CreateFolder/>
-                    <RemoveFolder Id="RemoveINSTALLFOLDER" On="uninstall"/>
-                    <RegistryValue Root="HKCU" Key="Software\Enhanced Redmine" 
+                    <RemoveFolder Id="RemoveFolder" On="uninstall"/>
+                    <RegistryValue Root="HKCU" Key="Software\Test" 
                                   Name="installed" Type="integer" Value="1" KeyPath="yes"/>
                   </Component>
                 </Directory>
               </Directory>
             </Directory>
 
-            <Feature Id="Complete" Title="Enhanced Redmine" Level="1">
-              <ComponentRef Id="MainComponent" />
+            <Feature Id="TestFeature" Title="Test" Level="1">
+              <ComponentRef Id="TestComp" />
             </Feature>
 
             <MediaTemplate EmbedCab="yes" />
           </Product>
         </Wix>
-        '@ | Out-File -FilePath "UltraMinimal.wxs" -Encoding UTF8
-        
-        # Step 2: 超シンプルビルド実行
-        Write-Host "Building ultra-minimal MSI..."
+        '@ | Out-File -FilePath "AbsoluteTest.wxs" -Encoding UTF8
+
+        # 絶対確実ビルド
+        Write-Host "Building absolute minimal test..."
+
         try {
-          & candle.exe -nologo "UltraMinimal.wxs" -out "UltraMinimal.wixobj"
+          # candle.exe 実行
+          Write-Host "Running candle.exe..."
+          $candleArgs = @("-nologo", "-v", "AbsoluteTest.wxs", "-out", "AbsoluteTest.wixobj")
+          Write-Host "Command: candle.exe $($candleArgs -join ' ')"
           
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "✅ Ultra-minimal candle.exe succeeded"
+          $candleOutput = & candle.exe @candleArgs 2>&1
+          Write-Host "candle.exe output:"
+          $candleOutput | ForEach-Object { Write-Host "  $_" }
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ candle.exe failed with exit code: $LASTEXITCODE"
+            Write-Host "❌ This indicates WiX environment is fundamentally broken"
             
-            & light.exe -nologo "UltraMinimal.wixobj" -out "UltraMinimal.msi"
+            # 詳細診断
+            Write-Host "🔍 DETAILED DIAGNOSTICS:"
+            Write-Host "Working directory: $(Get-Location)"
+            Write-Host "candle.exe location: $(Get-Command candle.exe -ErrorAction SilentlyContinue).Source"
+            Write-Host "PATH: $env:PATH"
+            Write-Host "AbsoluteTest.wxs exists: $(Test-Path 'AbsoluteTest.wxs')"
             
-            if ($LASTEXITCODE -eq 0) {
-              Write-Host "✅ Ultra-minimal MSI created successfully!"
-              $msi = Get-Item "UltraMinimal.msi"
-              Write-Host "   Size: $([math]::Round($msi.Length/1KB, 1)) KB"
-              
-              # 成功した場合、段階的に機能追加
-              Write-Host "🎉 BREAKTHROUGH: Basic MSI generation works!"
-              Write-Host "Next: Add files incrementally"
-              
-            } else {
-              Write-Host "❌ Ultra-minimal light.exe failed"
-              exit 1
+            if (Test-Path 'AbsoluteTest.wxs') {
+              Write-Host "AbsoluteTest.wxs content:"
+              Get-Content 'AbsoluteTest.wxs' | ForEach-Object { Write-Host "  $_" }
             }
-          } else {
-            Write-Host "❌ Ultra-minimal candle.exe failed"
+            
             exit 1
           }
+          
+          Write-Host "✅ candle.exe succeeded!"
+          
+          # light.exe 実行
+          Write-Host "Running light.exe..."
+          $lightArgs = @("-nologo", "-v", "AbsoluteTest.wixobj", "-out", "AbsoluteTest.msi")
+          Write-Host "Command: light.exe $($lightArgs -join ' ')"
+          
+          $lightOutput = & light.exe @lightArgs 2>&1
+          Write-Host "light.exe output:"
+          $lightOutput | ForEach-Object { Write-Host "  $_" }
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ light.exe failed with exit code: $LASTEXITCODE"
+            exit 1
+          }
+          
+          # 成功検証
+          if (Test-Path "AbsoluteTest.msi") {
+            $msi = Get-Item "AbsoluteTest.msi"
+            $sizeKB = [math]::Round($msi.Length / 1KB, 1)
+            Write-Host "🎉 BREAKTHROUGH: MSI created successfully!"
+            Write-Host "📄 File: $($msi.Name)"
+            Write-Host "📊 Size: $sizeKB KB"
+            Write-Host "✅ WiX environment is working!"
+            
+          } else {
+            Write-Host "❌ MSI not found despite successful light.exe"
+            exit 1
+          }
+          
         } catch {
-          Write-Host "❌ Ultra-minimal build exception: $($_.Exception.Message)"
+          Write-Host "❌ Absolute minimal test exception: $($_.Exception.Message)"
+          Write-Host "❌ Exception type: $($_.Exception.GetType().Name)"
           exit 1
         }
       shell: powershell
     
-    - name: MSBuild Alternative Implementation
+    - name: Progressive Build Implementation
       run: |
-        Write-Host "🔄 PHASE 3: MSBuild Alternative Implementation"
+        Write-Host "🔄 PHASE 3: Progressive Build Implementation"
         
-        # MSBuild用プロジェクトファイル作成
-        @'
-        <Project DefaultTargets="BuildMSI" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-          
-          <PropertyGroup>
-            <WixToolPath>$(ProgramFiles)\WiX Toolset v3.11\bin</WixToolPath>
-            <OutputName>EnhancedRedmineInstaller</OutputName>
-          </PropertyGroup>
-          
-          <ItemGroup>
-            <WixSource Include="UltraMinimal.wxs" />
-          </ItemGroup>
-          
-          <Target Name="BuildMSI">
-            <Message Text="Building MSI with MSBuild..." />
-            
-            <Exec Command="&quot;$(WixToolPath)\candle.exe&quot; -nologo @(WixSource) -out $(OutputName).wixobj" 
-                  ContinueOnError="false" />
-                  
-            <Exec Command="&quot;$(WixToolPath)\light.exe&quot; -nologo $(OutputName).wixobj -out $(OutputName).msi" 
-                  ContinueOnError="false" />
-          </Target>
-          
-        </Project>
-        '@ | Out-File -FilePath "BuildMSI.proj" -Encoding UTF8
+        # Step 1: UltraMinimal.wxs ビルド
+        Write-Host "Step 1: Building UltraMinimal.wxs..."
         
-        # MSBuildで実行
-        Write-Host "Executing MSBuild approach..."
+        # Copy UltraMinimal.wxs from source
+        Write-Host "Copying UltraMinimal.wxs from src/wix/"
+        Copy-Item "..\src\wix\UltraMinimal.wxs" -Destination "UltraMinimal.wxs" -Force
+        
         try {
-          & msbuild.exe "BuildMSI.proj" /p:Configuration=Release /verbosity:minimal
+          Write-Host "Building UltraMinimal installer..."
           
-          if ($LASTEXITCODE -eq 0) {
-            Write-Host "✅ MSBuild approach succeeded!"
-            if (Test-Path "EnhancedRedmineInstaller.msi") {
-              $msi = Get-Item "EnhancedRedmineInstaller.msi"
-              Write-Host "✅ MSI created: $($msi.Name) ($([math]::Round($msi.Length/1KB, 1)) KB)"
-            }
-          } else {
-            Write-Host "❌ MSBuild approach failed"
+          # candle.exe for UltraMinimal
+          Write-Host "Running candle.exe on UltraMinimal.wxs..."
+          $candleOutput = & candle.exe -nologo -v "UltraMinimal.wxs" -out "UltraMinimal.wixobj" 2>&1
+          Write-Host "candle.exe output:"
+          $candleOutput | ForEach-Object { Write-Host "  $_" }
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ UltraMinimal candle.exe failed with exit code: $LASTEXITCODE"
+            exit 1
           }
+          
+          Write-Host "✅ UltraMinimal candle.exe succeeded!"
+          
+          # light.exe for UltraMinimal
+          Write-Host "Running light.exe on UltraMinimal.wixobj..."
+          $lightOutput = & light.exe -nologo -v "UltraMinimal.wixobj" -out "UltraMinimal.msi" 2>&1
+          Write-Host "light.exe output:"
+          $lightOutput | ForEach-Object { Write-Host "  $_" }
+          
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ UltraMinimal light.exe failed with exit code: $LASTEXITCODE"
+            exit 1
+          }
+          
+          # Verify UltraMinimal MSI
+          if (Test-Path "UltraMinimal.msi") {
+            $msi = Get-Item "UltraMinimal.msi"
+            $sizeKB = [math]::Round($msi.Length / 1KB, 1)
+            Write-Host "🎉 UltraMinimal MSI created successfully!"
+            Write-Host "📄 File: $($msi.Name)"
+            Write-Host "📊 Size: $sizeKB KB"
+            Write-Host "✅ Enhanced Redmine minimal installer working!"
+          } else {
+            Write-Host "❌ UltraMinimal MSI not found despite successful light.exe"
+            exit 1
+          }
+          
         } catch {
-          Write-Host "⚠️ MSBuild not available: $($_.Exception.Message)"
+          Write-Host "❌ UltraMinimal build exception: $($_.Exception.Message)"
+          exit 1
         }
       shell: powershell
     

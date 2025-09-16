@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="11111111-2222-3333-4444-555555555555" 
+           Name="Absolute Test" 
+           Language="1033" 
+           Version="1.0.0.0" 
+           Manufacturer="Test">
+    
+    <Package InstallerVersion="200" 
+             Compressed="yes" 
+             InstallScope="perMachine" />
+
+    <!-- Registry-only installation - NO FILES -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Component Id="RegistryComp" Guid="11111111-2222-3333-4444-666666666666">
+        <RegistryValue Root="HKCU" 
+                      Key="Software\AbsoluteTest" 
+                      Name="Version" 
+                      Type="string" 
+                      Value="1.0.0" 
+                      KeyPath="yes" />
+      </Component>
+    </Directory>
+
+    <Feature Id="AbsoluteFeature" Title="Test" Level="1">
+      <ComponentRef Id="RegistryComp" />
+    </Feature>
+
+    <MediaTemplate EmbedCab="yes" />
+  </Product>
+</Wix>
