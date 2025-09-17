@@ -248,11 +248,88 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4
-    - run: |
-        choco install wixtoolset -y
-        echo '<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"><Product Id="*" Name="Test" Version="1.0" Manufacturer="Test"><Package Compressed="yes"/><Directory Id="TARGETDIR"><Component Id="C1" Guid="*"><CreateFolder/></Component></Directory><Feature Id="F1"><ComponentRef Id="C1"/></Feature></Product></Wix>' > simple.wxs
-        candle simple.wxs
-        light simple.wixobj -o installer.msi
+    - name: Install WiX Toolset
+      run: choco install wixtoolset -y
+    - name: Create Product.wxs
+      run: |
+        @'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+          <Product Id="*" Name="Enhanced Redmine Installer" Version="5.0.5.0" Manufacturer="Enhanced Redmine Team">
+            <Package Compressed="yes"/>
+            <Directory Id="TARGETDIR">
+              <Directory Id="ProgramFilesFolder">
+                <Directory Id="INSTALLFOLDER" Name="Enhanced Redmine">
+                  <Component Id="C1" Guid="*">
+                    <CreateFolder/>
+                  </Component>
+                  <Component Id="LicenseComponent" Guid="*">
+                    <File Source="LICENSE.rtf" KeyPath="yes"/>
+                  </Component>
+                  <Directory Id="ScriptsDir" Name="Scripts">
+                    <Component Id="StartScriptComponent" Guid="*">
+                      <File Source="src\scripts\start-redmine.bat" KeyPath="yes"/>
+                    </Component>
+                  </Directory>
+                  <Directory Id="TemplatesDir" Name="Templates">
+                    <Directory Id="ExcelDir" Name="Excel">
+                      <Component Id="GanttTemplateComponent" Guid="*">
+                        <File Source="templates\excel\gantt-template.xlsx" KeyPath="yes"/>
+                      </Component>
+                      <Component Id="EVMTemplateComponent" Guid="*">
+                        <File Source="templates\excel\evm-template.xlsx" KeyPath="yes"/>
+                      </Component>
+                      <Component Id="ReportTemplateComponent" Guid="*">
+                        <File Source="templates\excel\report-template.xlsx" KeyPath="yes"/>
+                      </Component>
+                      <Component Id="IssueTemplateComponent" Guid="*">
+                        <File Source="templates\excel\issue-export-template.xlsx" KeyPath="yes"/>
+                      </Component>
+                    </Directory>
+                  </Directory>
+                </Directory>
+              </Directory>
+            </Directory>
+            <Feature Id="F1">
+              <ComponentRef Id="C1"/>
+              <ComponentRef Id="LicenseComponent"/>
+              <ComponentRef Id="StartScriptComponent"/>
+              <ComponentRef Id="GanttTemplateComponent"/>
+              <ComponentRef Id="EVMTemplateComponent"/>
+              <ComponentRef Id="ReportTemplateComponent"/>
+              <ComponentRef Id="IssueTemplateComponent"/>
+            </Feature>
+          </Product>
+        </Wix>
+        '@ | Out-File -FilePath "Product.wxs" -Encoding UTF8
+      shell: powershell
+    - name: Build MSI
+      run: |
+        candle Product.wxs
+        light Product.wixobj -o EnhancedRedmineInstaller.msi
+    - name: Verify Build Output
+      run: |
+        if (Test-Path "EnhancedRedmineInstaller.msi") {
+          $size = (Get-Item "EnhancedRedmineInstaller.msi").Length
+          Write-Host "✅ MSI created successfully: $(($size / 1KB).ToString('F2')) KB"
+          if ($size -lt 1KB) {
+            Write-Host "⚠️ Warning: MSI file is very small"
+          }
+        } else {
+          Write-Host "❌ MSI file not found"
+          exit 1
+        }
+      shell: powershell
+    - name: Upload Enhanced Redmine Installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: enhanced-redmine-installer
+        path: |
+          EnhancedRedmineInstaller.msi
+          Product.wxs
+          Product.wixobj
+        retention-days: 30
+        if-no-files-found: error
 
   # Create Docker image for testing
   build-docker:
