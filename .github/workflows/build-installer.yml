@@ -246,6 +246,9 @@ jobs:
 
   simple-build:
     runs-on: windows-latest
+    name: Build Windows Installer
+    needs: [security-scan, test-components]
+
     steps:
     - uses: actions/checkout@v4
     - name: Debug Enhanced Redmine Build
@@ -278,12 +281,23 @@ jobs:
         light -v debug.wixobj -o EnhancedRedmineInstaller.msi
 
         if (Test-Path "EnhancedRedmineInstaller.msi") {
-          Write-Host "✅ SUCCESS: MSI created"
+          $size = (Get-Item "EnhancedRedmineInstaller.msi").Length
+          Write-Host "✅ SUCCESS: MSI created ($(($size / 1KB).ToString('F2')) KB)"
         } else {
           Write-Host "❌ FAILED: No MSI"
           exit 1
         }
       shell: powershell
+    - name: Upload Enhanced Redmine Installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: enhanced-redmine-installer
+        path: |
+          EnhancedRedmineInstaller.msi
+          debug.wxs
+          debug.wixobj
+        retention-days: 30
+        if-no-files-found: error
 
   # Create Docker image for testing
   build-docker:
