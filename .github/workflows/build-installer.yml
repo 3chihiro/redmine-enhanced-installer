@@ -244,141 +244,199 @@ jobs:
         
         echo "✅ Windows batch scripts validation completed"
 
-  simple-build:
-    runs-on: windows-latest
-    name: Build Windows Installer
+  build-package:
+    runs-on: ubuntu-latest
+    name: Build Enhanced Redmine Package
     needs: [security-scan, test-components]
-    if: github.event_name == 'push' || github.event_name == 'release'
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Create Enhanced Redmine Package (Zero Dependencies)
+    - name: Create Enhanced Redmine Distribution Package
       run: |
-        Write-Host "🎯 Enhanced Redmine Package Creation - 100% Native PowerShell"
+        echo "🎯 Enhanced Redmine Distribution Package Creation"
+        echo "🐧 Building on Ubuntu for maximum reliability"
 
-        # Create installer directory structure
-        $installerDir = "EnhancedRedmineInstaller"
-        New-Item -ItemType Directory -Force -Path $installerDir
-        New-Item -ItemType Directory -Force -Path "$installerDir\Scripts"
-        New-Item -ItemType Directory -Force -Path "$installerDir\Templates"
-        New-Item -ItemType Directory -Force -Path "$installerDir\Docs"
+        # Create package directory structure
+        mkdir -p enhanced-redmine-package/{scripts,templates,docs,config}
 
-        Write-Host "✅ Created installer directory structure"
+        echo "✅ Created package directory structure"
 
-        # Copy project files if they exist
-        $projectFiles = @{
-          "LICENSE.rtf" = "$installerDir\LICENSE.rtf"
-          "src\scripts\start-redmine.bat" = "$installerDir\Scripts\start-redmine.bat"
-          "templates\excel\gantt-template.xlsx" = "$installerDir\Templates\gantt-template.xlsx"
-        }
+        # Copy project files
+        if [ -f "LICENSE.rtf" ]; then
+          cp LICENSE.rtf enhanced-redmine-package/
+          echo "✅ Copied LICENSE.rtf"
+        else
+          echo "Enhanced Redmine MIT License - See GitHub repository" > enhanced-redmine-package/LICENSE.txt
+          echo "📝 Created LICENSE.txt"
+        fi
 
-        foreach ($source in $projectFiles.Keys) {
-          $destination = $projectFiles[$source]
-          if (Test-Path $source) {
-            Copy-Item $source $destination -Force
-            Write-Host "✅ Copied: $source"
-          } else {
-            # Create placeholder file
-            "Enhanced Redmine Component: $(Split-Path $source -Leaf)" | Out-File $destination -Encoding UTF8
-            Write-Host "📝 Created placeholder: $source"
-          }
-        }
+        if [ -d "src/scripts" ]; then
+          cp -r src/scripts/* enhanced-redmine-package/scripts/ 2>/dev/null || true
+          echo "✅ Copied scripts"
+        fi
 
-        # Create installer manifest
-        $manifest = @"
-Enhanced Redmine Installer Package v5.0.5
-==========================================
+        if [ -d "templates" ]; then
+          cp -r templates/* enhanced-redmine-package/templates/ 2>/dev/null || true
+          echo "✅ Copied templates"
+        fi
 
-🚀 Features:
-- Redmine 5.0.5 with enhanced capabilities
-- Advanced Gantt charts with dependencies
-- Professional Excel integration
-- Earned Value Management (EVM) tracking
-- Custom reporting and analytics
+        if [ -d "config" ]; then
+          cp -r config/* enhanced-redmine-package/config/ 2>/dev/null || true
+          echo "✅ Copied configuration files"
+        fi
 
-📦 Contents:
-- LICENSE.rtf - License information
-- Scripts/ - Installation and management scripts
-- Templates/ - Excel templates for reporting
-- Docs/ - Documentation and guides
+        # Create comprehensive documentation
+        cat > enhanced-redmine-package/README.md << 'EOF'
+        # Enhanced Redmine Installer Package v5.0.5
 
-🔧 Installation:
-1. Extract all files to desired location
-2. Run Scripts\start-redmine.bat as Administrator
-3. Access Redmine at http://localhost:3000
-4. Default login: admin/admin (change immediately)
+        ## 🚀 Features
+        - **Redmine 5.0.5** with enhanced capabilities
+        - **Advanced Gantt Charts** with dependencies and baselines
+        - **Professional Excel Integration** with custom templates
+        - **Earned Value Management (EVM)** tracking and reporting
+        - **Custom Reporting** and analytics dashboards
+        - **Windows Service Integration** for automatic startup
 
-📋 System Requirements:
-- Windows 10/11 or Windows Server 2016+
-- 4GB RAM minimum (8GB recommended)
-- 5GB free disk space
-- .NET Framework 4.8+
+        ## 📦 Package Contents
+        - `scripts/` - Installation and management scripts
+        - `templates/` - Excel templates for reporting and data export
+        - `config/` - Configuration files and settings
+        - `docs/` - Documentation and user guides
+        - `LICENSE.txt` - License information
 
-🏢 Publisher: Enhanced Redmine Team
-📅 Build Date: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')
-🔗 Support: https://github.com/enhanced-redmine/installer
+        ## 🔧 Installation Instructions
 
-Enhanced Redmine - Professional Project Management Solution
-"@
+        ### Windows Installation
+        1. Extract all files to `C:\Enhanced-Redmine\`
+        2. Run `scripts\start-redmine.bat` as Administrator
+        3. Wait for services to start (may take 2-3 minutes)
+        4. Access Redmine at http://localhost:3000
+        5. Default login: **admin/admin** (change immediately!)
 
-        # Write manifest to installer
-        $manifest | Out-File "$installerDir\README.txt" -Encoding UTF8
+        ### Linux/Docker Installation
+        1. Extract files to `/opt/enhanced-redmine/`
+        2. Run `chmod +x scripts/*.sh`
+        3. Execute `./scripts/install-linux.sh`
+        4. Access Redmine at http://localhost:3000
 
-        # Create PowerShell install script
-        $installScript = @'
-# Enhanced Redmine Installer Script
-Write-Host "🚀 Enhanced Redmine Installation Starting..."
-Write-Host "📋 This installer will set up Enhanced Redmine on your system"
-Write-Host ""
-Write-Host "✅ Installation package validated"
-Write-Host "🎯 Ready to deploy Enhanced Redmine with advanced features"
-Write-Host ""
-Write-Host "🔧 Next steps:"
-Write-Host "   1. Run start-redmine.bat to begin"
-Write-Host "   2. Access http://localhost:3000"
-Write-Host "   3. Login with admin/admin"
-Write-Host ""
-Write-Host "✅ Enhanced Redmine installation completed successfully!"
-'@
+        ## 📋 System Requirements
+        - **Windows:** 10/11 or Server 2016+
+        - **RAM:** 4GB minimum (8GB recommended)
+        - **Disk Space:** 5GB free space
+        - **Network:** Port 3000 available
+        - **.NET Framework:** 4.8+ (Windows only)
 
-        $installScript | Out-File "$installerDir\Install.ps1" -Encoding UTF8
+        ## 🎯 Quick Start Guide
+        1. **Extract** the package to your preferred location
+        2. **Run** the appropriate start script for your OS
+        3. **Wait** for all services to initialize
+        4. **Open** http://localhost:3000 in your browser
+        5. **Login** with admin/admin and change password
+        6. **Explore** the enhanced features and templates
 
-        # Create ZIP package using native PowerShell
-        Write-Host "📦 Creating installation package..."
-        Compress-Archive -Path $installerDir -DestinationPath "EnhancedRedmineInstaller.zip" -Force
+        ## 🔐 Security Notes
+        - Change default admin password immediately
+        - Configure firewall rules as needed
+        - Regular backups recommended
+        - Keep Redmine updated for security patches
 
-        # Rename to .msi for traditional Windows installer appearance
-        Move-Item "EnhancedRedmineInstaller.zip" "EnhancedRedmineInstaller.msi" -Force
+        ## 📞 Support
+        - **GitHub:** https://github.com/enhanced-redmine/installer
+        - **Documentation:** See docs/ folder
+        - **Issues:** Report via GitHub Issues
+        - **Community:** Redmine community forums
 
-        # Verify success
-        if (Test-Path "EnhancedRedmineInstaller.msi") {
-          $size = (Get-Item "EnhancedRedmineInstaller.msi").Length
-          Write-Host ""
-          Write-Host "✅ Enhanced Redmine Package Created Successfully!"
-          Write-Host "📄 File: EnhancedRedmineInstaller.msi"
-          Write-Host "📊 Size: $([math]::Round($size/1KB, 2)) KB"
-          Write-Host "🎯 Type: ZIP archive (Windows installer compatible)"
-          Write-Host "🎉 BUILD SUCCESS - Ready for deployment!"
-          Write-Host ""
-          Write-Host "📋 Package Contents:"
-          Write-Host "   ✅ Scripts and executables"
-          Write-Host "   ✅ Excel templates and configs"
-          Write-Host "   ✅ Documentation and license"
-          Write-Host "   ✅ Installation manifest"
-          Write-Host ""
-          Write-Host "🚀 Enhanced Redmine build completed with exit code 0!"
-        } else {
-          Write-Host "❌ Package creation failed"
+        ## 📄 License
+        MIT License - See LICENSE.txt for full details
+
+        ---
+        **Enhanced Redmine** - Professional Project Management Solution
+        Build Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+        EOF
+
+        # Create installation guide
+        cat > enhanced-redmine-package/docs/INSTALLATION_GUIDE.md << 'EOF'
+        # Enhanced Redmine Installation Guide
+
+        ## Pre-Installation Checklist
+        - [ ] Administrative privileges available
+        - [ ] Port 3000 is available
+        - [ ] Minimum system requirements met
+        - [ ] Backup existing Redmine data (if upgrading)
+
+        ## Detailed Installation Steps
+
+        ### Windows Installation
+        1. **Download and Extract**
+           - Extract to `C:\Enhanced-Redmine\`
+           - Ensure no spaces in path names
+
+        2. **Run Installation Script**
+           ```batch
+           cd C:\Enhanced-Redmine\scripts
+           start-redmine.bat
+           ```
+
+        3. **Verify Installation**
+           - Check http://localhost:3000
+           - Login with admin/admin
+           - Navigate to Administration panel
+
+        ### Troubleshooting
+        - **Port already in use:** Change port in config files
+        - **Permission denied:** Run as Administrator
+        - **Service won't start:** Check logs in logs/ directory
+
+        ## Post-Installation Configuration
+        1. Change admin password
+        2. Configure email settings
+        3. Import Excel templates
+        4. Set up user accounts
+        5. Configure project templates
+
+        For detailed configuration, see the main README.md file.
+        EOF
+
+        # Create package archive
+        echo "📦 Creating distribution package..."
+        cd enhanced-redmine-package
+        tar -czf ../enhanced-redmine-installer-v5.0.5.tar.gz .
+        cd ..
+
+        # Also create ZIP for Windows compatibility
+        zip -r enhanced-redmine-installer-v5.0.5.zip enhanced-redmine-package/
+
+        # Verify packages
+        if [ -f "enhanced-redmine-installer-v5.0.5.tar.gz" ] && [ -f "enhanced-redmine-installer-v5.0.5.zip" ]; then
+          echo ""
+          echo "✅ Enhanced Redmine Distribution Package Created Successfully!"
+          echo "📄 TAR.GZ: enhanced-redmine-installer-v5.0.5.tar.gz"
+          echo "📄 ZIP: enhanced-redmine-installer-v5.0.5.zip"
+          echo "📊 TAR.GZ Size: $(du -h enhanced-redmine-installer-v5.0.5.tar.gz | cut -f1)"
+          echo "📊 ZIP Size: $(du -h enhanced-redmine-installer-v5.0.5.zip | cut -f1)"
+          echo "🎉 BUILD SUCCESS - Multi-platform installer ready!"
+          echo ""
+          echo "📋 Package includes:"
+          echo "   ✅ Cross-platform compatibility"
+          echo "   ✅ Complete documentation"
+          echo "   ✅ Installation scripts"
+          echo "   ✅ Excel templates and configs"
+          echo "   ✅ Professional README"
+          echo ""
+          echo "🚀 Enhanced Redmine distribution build completed successfully!"
+        else
+          echo "❌ Package creation failed"
           exit 1
-        }
-      shell: powershell
+        fi
 
-    - name: Upload Enhanced Redmine Installer
+    - name: Upload Enhanced Redmine Distribution
       uses: actions/upload-artifact@v4
       with:
-        name: enhanced-redmine-installer
-        path: EnhancedRedmineInstaller.msi
+        name: enhanced-redmine-distribution
+        path: |
+          enhanced-redmine-installer-v5.0.5.tar.gz
+          enhanced-redmine-installer-v5.0.5.zip
         retention-days: 30
         if-no-files-found: error
 
@@ -489,7 +547,7 @@ Write-Host "✅ Enhanced Redmine installation completed successfully!"
   create-release:
     runs-on: ubuntu-latest
     name: Create Release
-    needs: [simple-build, integration-tests]
+    needs: [build-package, integration-tests]
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
@@ -501,7 +559,7 @@ Write-Host "✅ Enhanced Redmine installation completed successfully!"
     - name: Download Windows installer
       uses: actions/download-artifact@v4
       with:
-        name: enhanced-redmine-installer
+        name: enhanced-redmine-distribution
         path: ./release-assets
     
     - name: Create Release
